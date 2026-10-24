@@ -5,7 +5,7 @@ Lee evento.json de la carpeta del evento, une src/consola.html con el CSS, las e
 y el dibujo de la pantalla del proyector, embebe la configuración y las imágenes y el
 video del evento como data URIs, para que el archivo funcione sin internet ni archivos sueltos.
 
-Uso:  python3 build.py                        -> compila eventos/cristo-rey-70
+Uso:  python3 build.py                        -> compila el ejemplo (ejemplos/generico)
       python3 build.py ruta/a/la/carpeta      -> dist/<id>.html
 """
 import base64
@@ -17,7 +17,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SRC, DIST = ROOT / 'src', ROOT / 'dist'
-POR_DEFECTO = ROOT / 'eventos' / 'cristo-rey-70'
+POR_DEFECTO = ROOT / 'ejemplos' / 'generico'
 
 # tipos de fondo (un molde por tipo en src/escenas.html); los de IMAGENES llevan "imagen"
 IMAGENES = {'escudo', 'logo', 'bordado'}

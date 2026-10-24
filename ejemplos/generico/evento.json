@@ -1,0 +1,19 @@
+{
+  "id": "escuela-ejemplo",
+  "titulo": "Acto 50 años",
+  "institucion": "Escuela N.º 1",
+  "numero": "50",
+  "unidad": "años",
+  "anios": "1976 · 2026",
+  "lema": "Aprender juntos, crecer juntos",
+  "colores": { "fondo": "#14352e", "acento": "#e8b64c", "texto": "#f3efe4" },
+  "fondos": [
+    { "tipo": "escudo", "nombre": "Escudo", "imagen": "escudo.svg",
+      "alt": "Escudo de la Escuela N.º 1: un sol sobre un libro abierto",
+      "colores": { "fondo": "#0f2a25", "fondo_abajo": "#1d4a3a" } },
+    { "tipo": "aniversario", "nombre": "Aniversario" },
+    { "tipo": "logo", "nombre": "Logo 50 años", "imagen": "logo.svg",
+      "alt": "Logo de los 50 años de la Escuela N.º 1, 1976-2026",
+      "colores": { "fondo": "#1d4e89", "papel": ["#1d4e89", "#3f8fd2", "#e8b64c", "#ffffff", "#5bb381"] } }
+  ]
+}

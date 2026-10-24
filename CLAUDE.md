@@ -1,18 +1,18 @@
 # Consola del acto
 
-Consola para manejar la proyección de un acto escolar con el teclado: una ventana de **consola** en la notebook y una ventana de **pantalla** en el proyector (segundo monitor). Nació para el acto de los 70 años del Instituto Superior Cristo Rey (Apóstoles, Misiones), donde **se usó en vivo el 23/10/2026 y funcionó bien**. El objetivo actual es **volverla genérica** para cualquier institución o evento y publicarla en GitHub.
+Consola para manejar la proyección de un acto escolar con el teclado: una ventana de **consola** en la notebook y una ventana de **pantalla** en el proyector (segundo monitor). Nació para el acto de los 70 años del Instituto Superior Cristo Rey (Apóstoles, Misiones), donde **se usó en vivo el 23/10/2026 y funcionó bien**. Ya es **genérica**: cada evento se configura con un `evento.json`. El objetivo ahora es publicarla en GitHub.
 
 ## Cómo se trabaja
 
-- `python3 build.py [carpeta del evento]` compila todo en `dist/<id>.html`: un único archivo autocontenido (unos 6–7 MB con el video de Cristo Rey) que funciona sin internet al abrirlo con doble clic. Sin argumento compila `eventos/cristo-rey-70`. **Siempre se edita `src/`, nunca `dist/`.**
-- `.venv/bin/python tests/smoke.py [carpeta del evento]` compila el evento y hace una prueba de punta a punta con Playwright, que también compara los textos y fondos con su `evento.json`. Después de cualquier cambio de comportamiento: compilar, correr la prueba y agregar un caso nuevo si hace falta.
+- `python3 build.py [carpeta del evento]` compila todo en `dist/<id>.html`: un único archivo autocontenido (unos 6–7 MB con el video de Cristo Rey) que funciona sin internet al abrirlo con doble clic. Sin argumento compila el ejemplo, `ejemplos/generico`. **Siempre se edita `src/`, nunca `dist/`.**
+- `.venv/bin/python tests/smoke.py [carpeta del evento]` compila el evento y hace una prueba de punta a punta con Playwright, que también compara los textos y fondos con su `evento.json`. Sin argumento prueba el ejemplo y cada `eventos/*/evento.json`. Después de cualquier cambio de comportamiento: compilar, correr la prueba y agregar un caso nuevo si hace falta.
   - Playwright está instalado en el entorno virtual `.venv/` (fuera de git). Para crearlo de cero: `python3 -m venv .venv`, `.venv/bin/pip install playwright` y `.venv/bin/python -m playwright install chromium`. También hace falta `ffmpeg`.
   - El Chromium de Playwright **no reproduce H.264**: los videos de prueba son WebM. El MP4 de la historia no se puede probar ahí, pero en Chrome y Brave anda.
 - Lo usa el autor en **Manjaro con GNOME**, desde Brave o Chrome, con el proyector en modo "Unir pantallas". El código vive en `~/workspace/consola-acto`; el HTML compilado se copia a la carpeta de cada evento.
 
 ## Configuración del evento
 
-Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `eventos/` está en `.gitignore`: los archivos son de cada institución. `build.py` valida el JSON (con errores en español), embebe las imágenes y el video, y mete el JSON en `<script type="application/json" id="evento">`. Las imágenes viajan dentro del JSON (`fondos[].src`, data URI); cada video va en su propio `<script class="vid64" data-clave>`. En el navegador queda en `EV`, y `FONDO[clave]` da cada fondo.
+Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `eventos/` está en `.gitignore`: los archivos son de cada institución. `ejemplos/generico/` sí va en git: es una escuela inventada con escudo y logo SVG propios (los genera `hacer_imagenes.py`) y sin video, y es lo que se compila y se prueba por defecto. La referencia de campos para usuarios está en el README. `build.py` valida el JSON (con errores en español), embebe las imágenes y el video, y mete el JSON en `<script type="application/json" id="evento">`. Las imágenes viajan dentro del JSON (`fondos[].src`, data URI); cada video va en su propio `<script class="vid64" data-clave>`. En el navegador queda en `EV`, y `FONDO[clave]` da cada fondo.
 
 - Campos: `id` (minúsculas y guiones; se usa en el nombre del archivo, la clave de `localStorage` y el nombre de la ventana), `titulo`, `institucion` (obligatorios), y `numero`, `unidad`, `anios`, `lema` (opcionales: si faltan, se ocultan).
 - `fondos`: lista ordenada de `{tipo, nombre, imagen | archivo, alt?, rota?, colores?}`. El orden es el de la lista y la rotación. `rota: false` lo deja fuera de la rotación automática (se puede poner fijo igual). Los tipos se pueden repetir y ninguno es obligatorio. `build.py` le pone a cada uno su `clave`: el tipo, o `tipo-2`, `tipo-3`… si se repite. Tipos: `escudo`, `aniversario`, `logo`, `bordado` y `video` (con `rotulos: [{desde, hasta?, texto, sub?}]`, en segundos; sin `hasta`, el rótulo queda hasta el final).
@@ -86,11 +86,10 @@ En `localStorage['consola-acto:<id>']`: nombre, sonido, "al terminar", repetici�
 - La música previa y posterior se cargó como archivos del programa; una "lista de música" que reproduzca una carpeta en secuencia sería más cómoda.
 - Una nota o guion por contenido ("lanzar cuando dicen…") visible en la consola habría ayudado al operador.
 
-## Qué está atado al acto de los 70 años (para volverlo genérico)
+## Generalización y lo que queda
 
-- ~~Textos, títulos, etiquetas de los fondos, clave de `localStorage` y tiempos de los rótulos~~: ya salen de `evento.json` (paso 1).
-- ~~Colores fijos en `src/pantalla.css` y `src/dibujo.js`~~: salen de `colores` (paso 2).
-- **Imágenes y video** en `eventos/cristo-rey-70/` (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia). **Son de la institución y del grupo de danzas:** antes de publicar el repositorio, confirmar si se pueden subir. Mientras tanto quedan fuera de git; falta agregar un evento de ejemplo en `ejemplos/generico/` (paso 4).
-- ~~Escenas, `BUILTIN` y rotación fijas~~: se generan desde `fondos` (paso 3). El tipo `bordado` (punto cruz ucraniano) sigue siendo un diseño pensado para Sokoly, aunque sus colores son configurables.
+Textos, colores, escenas, fondos y rotación salen de `evento.json`. Cristo Rey es un evento más, en `eventos/cristo-rey-70/`, y se ve igual que en el acto. Queda pendiente:
 
-Plan en curso: 1) `evento.json` + textos (hecho), 2) colores (hecho), 3) escenas y `BUILTIN` generadas desde `fondos` (hecho), 4) `ejemplos/generico/` como evento por defecto.
+- **Imágenes y video de Cristo Rey** (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia): **son de la institución y del grupo de danzas.** Antes de subirlos al repositorio, confirmar el permiso. Mientras tanto, quedan fuera de git.
+- El tipo `bordado` (punto cruz ucraniano) es un diseño pensado para Sokoly; sus colores se pueden cambiar, pero el motivo no.
+- Las tipografías de la pantalla (Cinzel y Cormorant Garamond, de Google Fonts con respaldo) y los colores de la consola son fijos.

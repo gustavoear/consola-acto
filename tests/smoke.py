@@ -6,7 +6,8 @@ lanzar video / imagen / música, negro, fondos, fondos agregados y opciones "Al 
 
 Requisitos: Playwright en .venv/ (ver CLAUDE.md) y ffmpeg (para generar los archivos de ejemplo)
 Uso:        .venv/bin/python tests/smoke.py [carpeta del evento]
-            Compila el evento con build.py (por defecto, el mismo que build.py) y lo prueba.
+            Compila el evento con build.py y lo prueba. Sin argumento prueba el ejemplo
+            (ejemplos/generico) y cada evento de eventos/ que tenga evento.json.
 
 Nota: el Chromium de Playwright no trae H.264, por eso los videos de ejemplo son WebM.
 El video de la historia (MP4) no se reproduce en la prueba, pero sí en Chrome/Brave.
@@ -41,10 +42,10 @@ def ejemplos():
     return sorted(str(p) for p in MEDIA.iterdir())
 
 
-def main() -> int:
-    carpeta = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else build.POR_DEFECTO
+def probar(carpeta: pathlib.Path) -> bool:
+    print(f'\n=== {carpeta.relative_to(ROOT) if carpeta.is_relative_to(ROOT) else carpeta} ===', flush=True)
     if subprocess.run([sys.executable, str(ROOT / 'build.py'), str(carpeta)]).returncode:
-        return 1
+        return False
     ev = json.loads((carpeta / 'evento.json').read_text(encoding='utf-8'))
     dist = build.DIST / f'{ev["id"]}.html'
     archivos, fallas, errores = ejemplos(), [], []
@@ -126,7 +127,6 @@ def main() -> int:
         for f in ev['fondos']:
             c.locator('#bgList .bgname', has_text=f['nombre']).click(); p.wait_for_timeout(700)
             check('fondo fijo: ' + f['nombre'], p.eval_on_selector('section.scene.on', 'e => e.getAttribute("aria-label")'), f['nombre'])
-        c.keyboard.press('f'); p.wait_for_timeout(500)
 
         # fondos agregados y rotación
         c.keyboard.press('f'); p.wait_for_timeout(500)
@@ -138,8 +138,19 @@ def main() -> int:
 
     for e in errores:
         print('ERROR JS', e)
-    print('\n' + ('Todo bien.' if not fallas and not errores else f'{len(fallas)} fallas, {len(errores)} errores JS.'))
-    return 1 if fallas or errores else 0
+    print('Todo bien.' if not fallas and not errores else f'{len(fallas)} fallas, {len(errores)} errores JS.')
+    return not fallas and not errores
+
+
+def main() -> int:
+    if len(sys.argv) > 1:
+        carpetas = [pathlib.Path(a).resolve() for a in sys.argv[1:]]
+    else:
+        carpetas = [build.POR_DEFECTO] + sorted(j.parent for j in (ROOT / 'eventos').glob('*/evento.json'))
+    resultados = {c: probar(c) for c in carpetas}
+    if len(carpetas) > 1:
+        print('\n' + '\n'.join(f'{"OK   " if ok else "FALLA"} {c.name}' for c, ok in resultados.items()))
+    return 0 if all(resultados.values()) else 1
 
 
 if __name__ == '__main__':
