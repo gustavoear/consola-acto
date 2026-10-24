@@ -2,17 +2,14 @@
 """Prueba de humo de punta a punta con Playwright (Chromium).
 
 Abre la consola, carga contenidos de ejemplo, abre la pantalla del proyector y recorre
-lanzar video / imagen / música, negro, fondos, fondos agregados y opciones "Al terminar".
+lanzar video / imagen / música, negro, fondos agregados, créditos y opciones "Al terminar".
 
 Requisitos: Playwright en .venv/ (ver CLAUDE.md) y ffmpeg (para generar los archivos de ejemplo)
-Uso:        .venv/bin/python tests/smoke.py [carpeta del evento]
-            Compila el evento con build.py y lo prueba. Sin argumento prueba el ejemplo
-            (ejemplos/generico) y cada evento de eventos/ que tenga evento.json.
+Uso:        .venv/bin/python tests/smoke.py   (compila con build.py y prueba dist/consola-acto.html)
 
 Nota: el Chromium de Playwright no trae H.264, por eso los videos de ejemplo son WebM.
-El video de la historia (MP4) no se reproduce en la prueba, pero sí en Chrome/Brave.
+Los MP4 no se reproducen en la prueba, pero sí en Chrome/Brave.
 """
-import json
 import pathlib
 import subprocess
 import sys
@@ -42,20 +39,20 @@ def ejemplos():
     return sorted(str(p) for p in MEDIA.iterdir())
 
 
-def probar(carpeta: pathlib.Path) -> bool:
-    print(f'\n=== {carpeta.relative_to(ROOT) if carpeta.is_relative_to(ROOT) else carpeta} ===', flush=True)
-    if subprocess.run([sys.executable, str(ROOT / 'build.py'), str(carpeta)]).returncode:
-        return False
-    ev = json.loads((carpeta / 'evento.json').read_text(encoding='utf-8'))
-    dist = build.DIST / f'{ev["id"]}.html'
+def main() -> int:
+    if subprocess.run([sys.executable, str(ROOT / 'build.py')]).returncode:
+        return 1
+    dist = build.SALIDA
     archivos, fallas, errores = ejemplos(), [], []
 
     def check(nombre, valor, esperado):
         ok = esperado in valor
-        print(('OK   ' if ok else 'FALLA'), nombre, '→', valor)
+        corto = next((l.strip() for l in valor.splitlines() if l.strip()), '')
+        print(('OK   ' if ok else 'FALLA'), nombre, '→', corto[:70] + ('…' if len(corto) > 70 else ''))
         if not ok:
             fallas.append(nombre)
 
+    check('licencia dentro del HTML', dist.read_text(encoding='utf-8')[:1500], 'Copyright (c) 2026 Gustavo Earnshaw')
     with sync_playwright() as pw:
         b = pw.chromium.launch()
         ctx = b.new_context(viewport={'width': 1366, 'height': 900})
@@ -71,28 +68,21 @@ def probar(carpeta: pathlib.Path) -> bool:
         p.wait_for_timeout(2000); p.click('#arranque'); c.wait_for_timeout(800)
 
         check('conexión', c.inner_text('#conn'), 'Proyector conectado')
+        check('título de la consola', c.title(), 'Consola del acto')
+        check('título del proyector', p.title(), 'Consola del acto')
+        check('clave guardada', str(c.evaluate('Object.keys(localStorage)')), 'consola-acto:programa')
 
-        # textos y fondos tomados de evento.json
-        check('título de la consola', c.title(), ev['titulo'])
-        check('título del proyector', p.title(), ev['titulo'])
-        check('encabezado', c.inner_text('.c-brand'), ev['institucion'])
-        check('fondos de la consola', str(c.eval_on_selector_all('#bgList .bgname b', 'els => els.map(e => e.textContent)')),
-              str([f['nombre'] for f in ev['fondos']]))
-        aniv = 'section.scene[data-tipo="aniversario"] '
-        for campo, sel in (('lema', aniv + '.lema'), ('anios', aniv + '.years'), ('numero', aniv + '.num'), ('institucion', aniv + '.inst')):
-            if ev.get(campo) and any(f['tipo'] == 'aniversario' for f in ev['fondos']):
-                check('pantalla: ' + campo, p.text_content(sel), ev[campo])
-        video = next((f for f in ev['fondos'] if f['tipo'] == 'video'), None)
-        if video:
-            check('rótulos del video', str(p.eval_on_selector_all('section.scene[data-tipo="video"] .yr', 'els => els.map(e => e.firstChild.textContent)')),
-                  str([r['texto'] for r in video.get('rotulos', [])]))
-        if ev.get('colores', {}).get('acento'):
-            check('color de acento', p.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--gold')"), ev['colores']['acento'])
-        check('una escena por fondo', str(p.locator('section.scene[data-clave]').count()), str(len(ev['fondos'])))
-        for f in ev['fondos']:
-            if f.get('rota') is False:
-                check('fuera de la rotación: ' + f['nombre'], c.locator('#bgList .bgrow', has_text=f['nombre']).locator('.bgname small').inner_text(), 'no rota')
-        check('clave guardada', str(c.evaluate('Object.keys(localStorage)')), 'consola-acto:' + ev['id'])
+        # arranca vacía: sin fondos, la pantalla queda en negro
+        check('sin fondos: aviso en la consola', c.inner_text('#bgList'), 'Todavía no hay fondos')
+        check('sin fondos: al aire', c.inner_text('#airSub'), 'Sin fondos cargados')
+        check('sin fondos: pantalla en negro', p.eval_on_selector('section.scene.on', 'e => e.id'), 'sN')
+
+        # créditos; después de tocarlos, Espacio sigue lanzando el siguiente (se prueba abajo)
+        c.click('.creditos summary'); c.wait_for_timeout(200)
+        creditos = c.inner_text('.creditos')
+        for texto in ('Gustavo Earnshaw', 'Instituto Superior Cristo Rey', 'Claude', 'licencia MIT'):
+            check('créditos: ' + texto, creditos, texto)
+
         c.keyboard.press('Space'); p.wait_for_timeout(1500)
         check('lanzar video', c.inner_text('#airName'), 'Danza')
         c.keyboard.press('Space'); p.wait_for_timeout(1500)
@@ -104,7 +94,7 @@ def probar(carpeta: pathlib.Path) -> bool:
         c.keyboard.press('s'); p.wait_for_timeout(2000)
         check('cortar música', c.inner_text('#musName'), 'Sin música')
         c.keyboard.press('f'); p.wait_for_timeout(1500)
-        check('fondos', c.inner_text('#airName'), 'Fondos animados')
+        check('fondos', c.inner_text('#airName'), 'Fondos')
 
         # "Al terminar: pasar al siguiente" cambiado en vivo
         c.keyboard.press('1'); p.wait_for_timeout(800)
@@ -123,34 +113,25 @@ def probar(carpeta: pathlib.Path) -> bool:
         check('repetir', c.inner_text('#airName'), 'Danza')
         check('repetir (sigue reproduciendo)', str(p.evaluate("[...document.querySelectorAll('section.media.on video')].some(v => v.loop && !v.paused)")), 'True')
 
-        # cada fondo del evento se puede dejar fijo y aparece en la pantalla
-        for f in ev['fondos']:
-            c.locator('#bgList .bgname', has_text=f['nombre']).click(); p.wait_for_timeout(700)
-            check('fondo fijo: ' + f['nombre'], p.eval_on_selector('section.scene.on', 'e => e.getAttribute("aria-label")'), f['nombre'])
-
-        # fondos agregados y rotación
+        # fondos agregados: el primero aparece enseguida, en rotación
         c.keyboard.press('f'); p.wait_for_timeout(500)
-        c.set_input_files('#bgFiles', [a for a in archivos if a.endswith('.jpg')]); c.wait_for_timeout(800)
+        c.set_input_files('#bgFiles', [a for a in archivos if a.endswith(('.jpg', '.webm'))]); p.wait_for_timeout(1500)
+        check('fondos agregados: rotación', c.inner_text('#airSub'), 'Danza · rotación automática')
+        check('fondos agregados: en pantalla', p.eval_on_selector('section.scene.on', 'e => e.id'), 'sU')
         c.locator('.bgrow', has_text='Foto').locator('.bgname').click(); p.wait_for_timeout(1500)
         check('fondo agregado fijo', c.inner_text('#airSub'), 'Foto · fijo')
+
+        # al quitarlos (con confirmación), vuelve a negro
+        c.click('#bgVaciar'); c.click('#bgVaciar'); p.wait_for_timeout(1500)
+        check('quitar fondos: al aire', c.inner_text('#airSub'), 'Sin fondos cargados')
+        check('quitar fondos: pantalla en negro', p.eval_on_selector('section.scene.on', 'e => e.id'), 'sN')
 
         b.close()
 
     for e in errores:
         print('ERROR JS', e)
-    print('Todo bien.' if not fallas and not errores else f'{len(fallas)} fallas, {len(errores)} errores JS.')
-    return not fallas and not errores
-
-
-def main() -> int:
-    if len(sys.argv) > 1:
-        carpetas = [pathlib.Path(a).resolve() for a in sys.argv[1:]]
-    else:
-        carpetas = [build.POR_DEFECTO] + sorted(j.parent for j in (ROOT / 'eventos').glob('*/evento.json'))
-    resultados = {c: probar(c) for c in carpetas}
-    if len(carpetas) > 1:
-        print('\n' + '\n'.join(f'{"OK   " if ok else "FALLA"} {c.name}' for c, ok in resultados.items()))
-    return 0 if all(resultados.values()) else 1
+    print('\n' + ('Todo bien.' if not fallas and not errores else f'{len(fallas)} fallas, {len(errores)} errores JS.'))
+    return 1 if fallas or errores else 0
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ dist/
 # archivos de ejemplo que genera la prueba
 tests/media/
 
-# eventos reales: sus imágenes y videos son de cada institución y no se publican
+# archivos de eventos reales (imágenes y videos de cada institución): no se publican
 eventos/
 
 # entorno virtual de Python (Playwright)

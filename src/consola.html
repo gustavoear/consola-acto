@@ -1,6 +1,6 @@
-<title>__TITULO__</title>
+<title>Consola del acto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap">
 <style>
 /*CSS_PANTALLA*/
 
@@ -45,7 +45,6 @@ body.consola [hidden] { display: none !important; }
 body.consola *, body.consola *::before, body.consola *::after { box-sizing: border-box; }
 .c-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 4px 12px; border-bottom: 1px solid var(--c-line); }
 .c-brand { font-family: var(--display); font-weight: 700; letter-spacing: .06em; font-size: 18px; color: var(--c-gold); margin: 0; margin-right: auto; }
-.c-brand span:not(.c-title) { color: var(--c-mute); font-family: var(--ui); font-weight: 500; letter-spacing: 0; font-size: 13px; margin-left: 8px; }
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--c-raise);
   border: 1px solid var(--c-line); font-weight: 600; font-size: 13px; }
 .pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c-mute); }
@@ -163,6 +162,16 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 .c-toast.show { opacity: 1; transform: translate(-50%, 0); }
 .c-toast.bad { background: var(--c-air); color: #fff; }
 .help { color: var(--c-mute); font-size: 13px; margin: 8px 0 0; }
+.bgempty { color: var(--c-mute); font-size: 13px; margin: 10px 0 0; padding: 12px; border: 1px dashed var(--c-line); border-radius: 8px; }
+/* créditos: se despliegan al tocar "Acerca de" */
+.creditos summary { cursor: pointer; list-style: none; }
+.creditos summary::-webkit-details-marker { display: none; }
+.creditos summary h2 { display: inline; margin: 0; }
+.creditos summary::after { content: " ▸"; color: var(--c-mute); font-size: 11px; }
+.creditos details[open] summary::after { content: " ▾"; }
+.creditos p { color: var(--c-mute); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
+.creditos p b { color: var(--c-text); }
+.creditos a { color: var(--c-gold); overflow-wrap: anywhere; }
 </style>
 
 <template id="tplPantalla">
@@ -175,13 +184,9 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 <div class="arranque" id="arranque"><div><strong>Pantalla del proyector</strong><span id="arrTxt">Hacé clic acá una vez para activar el sonido y la pantalla completa.</span><small>Si esta ventana no está en el proyector, movela con Super + Shift + flecha izquierda o derecha.</small></div></div>
 </template>
 
-<template id="tplFondos">
-<!--ESCENAS-->
-</template>
-
 <template id="tplConsola">
 <header class="c-top">
-  <h1 class="c-brand"><span class="c-title" data-ev="titulo"></span> <span data-ev="institucion"></span></h1>
+  <h1 class="c-brand">Consola del acto</h1>
   <span class="pill" id="conn">Pantalla del proyector cerrada</span>
   <button class="btn prim" id="abrir" type="button">Abrir pantalla del proyector</button>
 </header>
@@ -190,8 +195,8 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     <div class="c-now">
       <section class="panel onair" aria-live="polite">
         <h2>Al aire</h2>
-        <p class="big-name" id="airName">Fondos animados</p>
-        <p class="sub" id="airSub">Rotación automática</p>
+        <p class="big-name" id="airName">Fondos</p>
+        <p class="sub" id="airSub">Sin fondos cargados</p>
         <div class="seek" id="airSeek" role="slider" aria-label="Posición del video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="airBar"></i></div><span class="tip"></span></div>
         <div class="times"><span id="airT">—</span><b id="airLeft">—</b></div>
       </section>
@@ -215,7 +220,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
   </main>
   <aside class="c-col">
     <section class="panel" id="bgPanel">
-      <h2>Fondos animados · <span class="kbd">F</span></h2>
+      <h2>Fondos · <span class="kbd">F</span></h2>
       <div class="bgs">
         <button class="btn" data-bg="rotar" type="button">Rotación automática</button>
         <button class="btn" data-bg="negro" type="button">Negro · N</button>
@@ -252,7 +257,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
         <dt><span class="kbd">Espacio</span></dt><dd>Lanzar el siguiente</dd>
         <dt><span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Elegir cuál es el siguiente</dd>
         <dt><span class="kbd">1</span>–<span class="kbd">9</span></dt><dd>Lanzar directo ese número</dd>
-        <dt><span class="kbd">F</span></dt><dd>Volver a los fondos animados</dd>
+        <dt><span class="kbd">F</span></dt><dd>Volver a los fondos</dd>
         <dt><span class="kbd">N</span></dt><dd>Negro</dd>
         <dt><span class="kbd">P</span></dt><dd>Pausar o seguir video / música</dd>
         <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Retroceder o adelantar 5 segundos</dd>
@@ -262,49 +267,23 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       </dl>
       <p class="help">Las teclas funcionan en esta ventana y también en la del proyector.</p>
     </section>
+    <section class="panel creditos">
+      <details>
+        <summary><h2>Acerca de</h2></summary>
+        <p><b>Consola del acto</b>, por Gustavo Earnshaw.</p>
+        <p>Nació para el acto de los 70 años del Instituto Superior Cristo Rey (Apóstoles, Misiones), en 2026.</p>
+        <p>Desarrollada con ayuda de Claude, de Anthropic.</p>
+        <p>Es software libre, con licencia MIT: podés usarla, copiarla, modificarla y compartirla, siempre que mantengas el aviso de autoría y de licencia. Se ofrece tal cual, sin garantías.</p>
+<!--REPO-->        <p>Código, novedades y licencia completa: <a href="__REPO__" target="_blank" rel="noopener">__REPO__</a></p>
+<!--/REPO-->      </details>
+    </section>
   </aside>
 </div>
 <div class="c-toast" id="toast" role="status"></div>
 </template>
-__VIDEO_DATA__
-<script type="application/json" id="evento">__EVENTO__</script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  // configuración del evento (evento.json), embebida por build.py
-  const EV = JSON.parse($('evento').textContent);
-  // cada fondo tiene una clave (la pone build.py): su tipo, o tipo-2, tipo-3… si el tipo se repite
-  const FONDO = Object.fromEntries(EV.fondos.map(f => [f.clave, f]));
-  const esVideo = k => !!FONDO[k] && FONDO[k].tipo === 'video';
-
-  // ----- colores del evento -----
-  // las variantes de cada color (más claro, más oscuro) se calculan en HSL, conservando el tono
-  const hexRgb = h => { h = h.slice(1); if (h.length === 3) h = [...h].map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
-  function hsl(c) {
-    const [r, g, b] = hexRgb(c).map(v => v / 255), max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
-    if (!d) return [0, 0, l];
-    const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    return [h * 60, d / (1 - Math.abs(2 * l - 1)), l];
-  }
-  function hex(h, s, l) {
-    const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
-    return '#' + [0, 8, 4].map(n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, '0')).join('');
-  }
-  // luz: el mismo tono con otra luminosidad (0 a 1) y, si se indica, otra saturación; escala: luminosidad multiplicada
-  const luz = (c, l, s) => { const [h, s0] = hsl(c); return hex(h, s == null ? s0 : s, l); };
-  const escala = (c, k) => { const [h, s, l] = hsl(c); return hex(h, s, Math.min(1, l * k)); };
-  const rgb = c => hexRgb(c).join(',');
-  const COL = Object.assign({ fondo: '#13254f', acento: '#e2b85c', texto: '#f4ecd9' }, EV.colores);
-  // colores de un fondo: los suyos (fondos[].colores) sobre los generales del evento
-  function paleta(f) {
-    const c = Object.assign({}, COL, f.colores);
-    return Object.assign({ fondo_abajo: c.fondo, brasas: '#f08a2c', papel: [c.acento, luz(c.acento, .88), c.texto, luz(c.fondo, .55)], hilos: [c.acento, c.texto] }, c);
-  }
-  // completa los textos marcados con data-ev; los que quedan vacíos se ocultan
-  function fillEv(root) {
-    for (const el of root.querySelectorAll('[data-ev]')) { el.textContent = EV[el.dataset.ev] || ''; el.hidden = !EV[el.dataset.ev]; }
-    for (const el of root.querySelectorAll('[data-ev-si]')) el.hidden = !EV[el.dataset.evSi];
-  }
   const MODO_PANTALLA = location.hash === '#pantalla';
   if (MODO_PANTALLA) pantalla(); else consola();
 
@@ -313,63 +292,20 @@ __VIDEO_DATA__
   // =====================================================================
   function pantalla() {
     document.body.className = 'pantalla';
-    document.title = 'Proyector · ' + EV.titulo;
+    document.title = 'Proyector · Consola del acto';
     document.body.appendChild($('tplPantalla').content.cloneNode(true));
-    const css = (el, k, v) => el.style.setProperty(k, v);
-    css(document.documentElement, '--gold', COL.acento);
-    css(document.documentElement, '--gold-hi', luz(COL.acento, .88));
-    css(document.documentElement, '--gold-lo', luz(COL.acento, .38));
-    css(document.documentElement, '--text', COL.texto);
-    css(document.documentElement, '--ink', escala(COL.fondo, .45));
-    const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3 };
-    // rotación: claves de los fondos del evento o 'u:<id>' para imágenes y videos agregados.
-    // Arranca con los de evento.json que no tienen "rota": false; después manda la consola.
-    let rot = EV.fondos.filter(f => f.rota !== false).map(f => f.clave), bgKinds = {}, curKey = null, uSlot = 'u2';
-    // fondo de respaldo: el primero que no es video
-    const PRIMERO = (EV.fondos.find(f => f.tipo !== 'video') || EV.fondos[0]).clave;
+    const CONFIG = { fondoSeg: 60, fadeSeg: 1.8 };
+    // rotación: 'u:<id>' de las imágenes y videos que se agregan como fondos desde la consola
+    let rot = [], bgKinds = {}, curKey = null, uSlot = 'u2';
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const mus = $('mus');
 
-/*DIBUJO*/
-
     // ----- escenas -----
-    // una por cada fondo de evento.json, clonada del molde de su tipo, debajo de las ranuras de contenidos
-    const scenes = {};
-    for (const f of EV.fondos) {
-      const sec = $('tplFondos').content.querySelector(`[data-tipo="${f.tipo}"]`).cloneNode(true);
-      sec.setAttribute('aria-label', f.nombre); sec.dataset.clave = f.clave;
-      fillEv(sec);
-      const img = sec.querySelector('img'); if (img) { img.src = f.src; img.alt = f.alt || f.nombre; }
-      $('sM1').before(sec);
-      const s = scenes[f.clave] = { el: sec, until: 0 };
-      if (f.tipo !== 'video') { Object.assign(s, DIBUJOS[f.tipo](sec, paleta(f))); continue; }
-      s.video = sec.querySelector('video');
-      // rótulos: se muestran entre "desde" y "hasta"; sin "hasta", quedan hasta el final
-      s.rotulos = (f.rotulos || []).map(r => {
-        const el = document.createElement('div'); el.className = 'yr txt'; el.textContent = r.texto;
-        if (r.sub) { const sm = document.createElement('small'); sm.textContent = r.sub; el.appendChild(sm); }
-        sec.appendChild(el);
-        return { el, desde: r.desde, hasta: r.hasta };
-      });
-      const emb = document.querySelector(`script.vid64[data-clave="${f.clave}"]`);
-      if (emb) {
-        const bin = atob(emb.textContent.trim()), buf = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-        s.video.src = URL.createObjectURL(new Blob([buf], { type: emb.dataset.mime || 'video/mp4' }));
-        emb.remove();
-      }
-      s.video.addEventListener('ended', () => videoTerminado(f.clave));
-    }
-    function size() {
-      dpr = Math.min(devicePixelRatio || 1, 2);
-      for (const s of Object.values(scenes)) if (s.size) s.size();
-    }
-    addEventListener('resize', size); size();
     const slot = id => { const el = $(id); return { el, blur: el.querySelector('img.blur'), img: el.querySelector('img.main'), v: el.querySelector('video') }; };
     const M = { m1: slot('sM1'), m2: slot('sM2') }, U = { u1: slot('sU1'), u2: slot('sU2') };
-    Object.assign(scenes, { m1: { el: M.m1.el }, m2: { el: M.m2.el }, u1: { el: U.u1.el }, u2: { el: U.u2.el }, negro: { el: $('sN') } });
+    const scenes = { m1: { el: M.m1.el }, m2: { el: M.m2.el }, u1: { el: U.u1.el }, u2: { el: U.u2.el }, negro: { el: $('sN') } };
     const files = new Map();       // id -> { file, url }
-    let current = null, mode = 'fondos', rotar = true, idx = 0, timer = null, returnTo = null, hEnded = false;
+    let current = null, mode = 'fondos', rotar = true, idx = 0, timer = null;
     let activeSlot = 'm2', cue = null, vol = 1;
     let musId = null, musLabel = '';
     const FADE_MS = 1800;
@@ -389,22 +325,19 @@ __VIDEO_DATA__
       document.documentElement.style.setProperty('--fade', (fade || CONFIG.fadeSeg) + 's');
       clearTimeout(timer);
       const prev = current;
-      if (prev && scenes[prev].draw) scenes[prev].until = performance.now() + 2600;
       current = name;
       for (const [k, s] of Object.entries(scenes)) s.el.classList.toggle('on', k === name);
       // apagar lo que sale
       if (prev && prev !== name) {
-        if (esVideo(prev)) scenes[prev].video.pause();
         if (M[prev]) { const v = M[prev].v; if (!v.paused) ramp(v, 0, FADE_MS * .8, () => v.pause()); }
         if (U[prev]) { const v = U[prev].v; setTimeout(() => { if (current !== prev) v.pause(); }, CONFIG.fadeSeg * 1000 + 200); }
       }
-      if (esVideo(name)) playVideo(name);
       schedule();
     }
     let nextAt = 0, startedAt = 0;
     function schedule(ms) {
       clearTimeout(timer); nextAt = 0;
-      if (mode === 'fondos' && rotar && !esVideo(current)) {
+      if (mode === 'fondos' && rotar && curKey) {
         if (ms === undefined) { ms = CONFIG.fondoSeg * 1000; startedAt = performance.now(); }
         nextAt = performance.now() + ms; timer = setTimeout(nextFondo, ms);
       }
@@ -415,11 +348,11 @@ __VIDEO_DATA__
       // si cambia la duración con un fondo en pantalla, se respeta lo que ya lleva mostrado
       if (nextAt) schedule(Math.max(1000, startedAt + CONFIG.fondoSeg * 1000 - performance.now()));
     }
-    const okKey = k => !!k && (k.startsWith('u:') ? !!(bgKinds[k.slice(2)] && files.has(k.slice(2))) : !!FONDO[k]);
+    const okKey = k => !!k && k.startsWith('u:') && !!(bgKinds[k.slice(2)] && files.has(k.slice(2)));
     function showBg(key) {
-      if (!okKey(key)) key = PRIMERO;
+      // sin fondos cargados, la pantalla queda en negro
+      if (!okKey(key)) { curKey = null; return show('negro'); }
       curKey = key;
-      if (!key.startsWith('u:')) return show(key);
       const id = key.slice(2), url = urlFor(id), name = uSlot === 'u1' ? 'u2' : 'u1', s = U[name];
       uSlot = name;
       if (bgKinds[id] === 'image') {
@@ -437,9 +370,8 @@ __VIDEO_DATA__
       show(name);
     }
     function nextFondo() {
-      if (esVideo(curKey) && returnTo) { const r = returnTo; returnTo = null; return showBg(r); }
       const list = rot.filter(okKey);
-      if (!list.length || (list.length === 1 && list[0] === curKey && !esVideo(curKey))) return schedule();
+      if (!list.length || (list.length === 1 && list[0] === curKey)) return schedule();
       idx = (list.indexOf(curKey) + 1) % list.length;
       showBg(list[idx]);
     }
@@ -447,41 +379,15 @@ __VIDEO_DATA__
       mode = 'fondos'; cue = null;
       if (typeof rotFlag === 'boolean') rotar = rotFlag;
       const list = rot.filter(okKey);
-      // un video fijo se pasa una vez y después se vuelve al fondo que estaba
-      if (esVideo(which)) {
-        returnTo = (curKey && !esVideo(curKey) && okKey(curKey)) ? curKey : (list.find(k => !esVideo(k)) || PRIMERO);
-        curKey = which; show(which); return;
-      }
-      returnTo = null;
       if (which) return showBg(which);
-      if (!list.length) return showBg(PRIMERO);
       // al volver a la rotación se sigue desde el último fondo mostrado
-      let n = list.includes(curKey) ? curKey : list[0];
-      if (esVideo(n) && list.length > 1) n = list[(list.indexOf(n) + 1) % list.length];
-      showBg(n);
+      showBg(list.includes(curKey) ? curKey : list[0]);
     }
     function setBgList(d) {
       rot = Array.isArray(d.rot) ? d.rot : rot; bgKinds = d.kinds || {};
-      // si se quitó el fondo agregado que estaba al aire, pasar al siguiente
-      if (mode === 'fondos' && curKey && curKey.startsWith('u:') && !okKey(curKey)) { curKey = null; fondos(null, true); }
-      else if (mode === 'fondos' && rotar && !nextAt && !esVideo(current)) schedule();
-    }
-    function playVideo(k) {
-      const { video: vid, rotulos } = scenes[k];
-      hEnded = false; for (const r of rotulos) r.el.classList.remove('show');
-      vid.classList.remove('zoom'); void vid.offsetWidth; if (!reduce) vid.classList.add('zoom');
-      vid.muted = true;
-      try { vid.currentTime = 0; } catch (e) {}
-      vid.play().catch(() => {});
-    }
-    function videoTerminado(k) {
-      if (current !== k) return;
-      hEnded = true;
-      if (mode !== 'fondos') return;
-      timer = setTimeout(() => {
-        if (returnTo && !rotar) { const r = returnTo; returnTo = null; showBg(r); }
-        else nextFondo();
-      }, CONFIG.pausaFinalSeg * 1000);
+      // si se quitó el fondo que estaba al aire, o no había ninguno y llegó el primero, mostrar uno ya
+      if (mode === 'fondos' && !okKey(curKey)) { curKey = null; fondos(null, true); }
+      else if (mode === 'fondos' && rotar && !nextAt) schedule();
     }
     function negro() { mode = 'negro'; cue = null; show('negro', 1.2); }
 
@@ -602,17 +508,6 @@ __VIDEO_DATA__
     lock(); document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && lock());
     addEventListener('beforeunload', e => { if (consola && !consola.closed) { e.preventDefault(); e.returnValue = ''; } });
 
-    let t = 0;
-    (function frame() {
-      t++;
-      const now = performance.now();
-      for (const [k, s] of Object.entries(scenes)) if (s.draw && (k === current || now < s.until)) s.draw(t);
-      if (esVideo(current)) {
-        const { video, rotulos } = scenes[current], ct = video.currentTime;
-        for (const r of rotulos) r.el.classList.toggle('show', r.hasta == null ? ct > r.desde || hEnded : !hEnded && ct > r.desde && ct < r.hasta);
-      }
-      requestAnimationFrame(frame);
-    })();
     fondos(null, true);
     send({ type: 'hola' });
   }
@@ -623,9 +518,8 @@ __VIDEO_DATA__
   function consola() {
     document.body.className = 'consola';
     document.body.appendChild($('tplConsola').content.cloneNode(true));
-    fillEv(document.body);
     for (const emb of document.querySelectorAll('script.vid64')) emb.remove();
-    const KEY = 'consola-acto:' + EV.id;
+    const KEY = 'consola-acto:programa';
     const VIDEO_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)$/i, IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)$/i, AUD_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i;
     let items = [], sel = 0, win = null, est = null, lastEst = 0, vol = 1;
     let saved = {};
@@ -714,31 +608,13 @@ __VIDEO_DATA__
       setTimeout(() => { if ($('vaciar').dataset.sure) { delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; } }, 3000);
     });
 
-    // ----- fondos: los animados propios y las imágenes o videos agregados -----
+    // ----- fondos: las imágenes o videos que se agregan para mostrar entre contenido y contenido -----
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-    // los fondos de evento.json; la miniatura muestra su imagen o un texto sobre el color de fondo
-    const BUILTIN = EV.fondos.map(f => {
-      const P = paleta(f), b = { key: f.clave, tipo: f.tipo, label: f.nombre, src: f.src, builtin: true, rota: f.rota !== false };
-      if (f.tipo === 'video') return { ...b, txt: ((f.rotulos || [])[0] || {}).texto || '▶', bgc: luz(P.acento, .22, .3) };
-      if (f.tipo === 'aniversario') return { ...b, txt: EV.numero || '★', bgc: P.fondo };
-      return { ...b, bgc: f.tipo === 'logo' ? luz(P.fondo, .97) : P.fondo };
-    });
-    // miniaturas chicas de los logos, para no repetir imágenes pesadas en la lista
-    for (const b of BUILTIN) if (b.src) {
-      const im = new Image();
-      im.onload = () => {
-        const c = document.createElement('canvas'); c.width = 104; c.height = 58; const x = c.getContext('2d');
-        x.fillStyle = b.bgc; x.fillRect(0, 0, 104, 58);
-        const r = Math.min(96 / im.width, 52 / im.height); x.drawImage(im, (104 - im.width * r) / 2, (58 - im.height * r) / 2, im.width * r, im.height * r);
-        b.thumb = c.toDataURL('image/jpeg', .8); renderBg();
-      };
-      im.src = b.src;
-    }
     saved.bg = Object.assign({ order: [], rot: {} }, saved.bg || {});
     let bgUser = [];
-    const inRot = k => (k in saved.bg.rot) ? saved.bg.rot[k] : !FONDO[k] || FONDO[k].rota !== false;
+    const inRot = k => (k in saved.bg.rot) ? saved.bg.rot[k] : true;
     function bgEntries() {
-      const all = BUILTIN.concat(bgUser), pos = k => { const i = saved.bg.order.indexOf(k); return i < 0 ? 1e6 : i; };
+      const all = bgUser, pos = k => { const i = saved.bg.order.indexOf(k); return i < 0 ? 1e6 : i; };
       return all.map((e, i) => [e, i]).sort((a, b) => (pos(a[0].key) - pos(b[0].key)) || (a[1] - b[1])).map(x => x[0]);
     }
     const bgLabel = k => (bgEntries().find(e => e.key === k) || {}).label || '';
@@ -781,17 +657,17 @@ __VIDEO_DATA__
       const list = bgEntries();
       bgListEl.innerHTML = list.map((e, i) => {
         const on = inRot(e.key), isLive = live === e.key;
-        const kindTxt = e.builtin ? (e.tipo === 'video' ? 'Video' : 'Animado') : e.err ? 'No se puede leer' : e.kind === 'video' ? 'Video' + (e.dur ? ' · ' + fmt(e.dur) : '') : 'Imagen';
+        const kindTxt = e.err ? 'No se puede leer' : e.kind === 'video' ? 'Video' + (e.dur ? ' · ' + fmt(e.dur) : '') : 'Imagen';
         return `<div class="bgrow${isLive ? ' live' : ''}${on ? '' : ' out'}" data-key="${esc(e.key)}">
-          <span class="bgthumb" data-act="show" title="Dejar fijo" style="background-color:${e.bgc};${e.thumb ? `background-image:url('${e.thumb}')` : ''}">${e.thumb ? '' : e.txt || (e.kind === 'video' ? '▶' : '')}</span>
+          <span class="bgthumb" data-act="show" title="Dejar fijo" style="background-color:${e.bgc};${e.thumb ? `background-image:url('${e.thumb}')` : ''}">${e.thumb ? '' : e.kind === 'video' ? '▶' : ''}</span>
           <span class="bgname" data-act="show" title="Dejar fijo"><b>${esc(e.label)}</b><small>${isLive ? '<span class="tag live">AL AIRE</span> ' : ''}${kindTxt}${on ? '' : ' · no rota'}</small></span>
           <span class="bgacts">
             <button type="button" class="btn rot" data-act="rot" aria-pressed="${on}" aria-label="${on ? 'Sacar de la rotación' : 'Incluir en la rotación'}" title="${on ? 'En la rotación: clic para sacarlo' : 'Fuera de la rotación: clic para incluirlo'}">↻</button>
             <button type="button" class="btn" data-act="up" aria-label="Subir"${i === 0 ? ' disabled' : ''}>↑</button>
             <button type="button" class="btn" data-act="down" aria-label="Bajar"${i === list.length - 1 ? ' disabled' : ''}>↓</button>
-            ${e.builtin ? '' : '<button type="button" class="btn" data-act="del" aria-label="Quitar este fondo" title="Quitar">✕</button>'}
+            <button type="button" class="btn" data-act="del" aria-label="Quitar este fondo" title="Quitar">✕</button>
           </span></div>`;
-      }).join('');
+      }).join('') || '<p class="bgempty">Todavía no hay fondos. Agregá imágenes o videos (por ejemplo, el escudo o el logo de la institución) para mostrar entre contenido y contenido. Mientras no haya, la pantalla queda en negro.</p>';
     }
     bgListEl.addEventListener('click', e => {
       const row = e.target.closest('.bgrow'); if (!row) return;
@@ -936,7 +812,7 @@ __VIDEO_DATA__
     $('abrir').addEventListener('click', () => {
       if (alive()) { toast('La pantalla ya está abierta'); return; }
       const url = location.href.split('#')[0] + '#pantalla';
-      let w = window.open('', 'pantalla-' + EV.id, 'popup,width=1280,height=720');
+      let w = window.open('', 'pantalla-consola-acto', 'popup,width=1280,height=720');
       if (!w) { toast('El navegador bloqueó la ventana: permití ventanas emergentes', true); return; }
       let blank = false; try { blank = w.location.href === 'about:blank'; } catch (e) {}
       if (blank) w.location.href = url; else try { w.postMessage({ type: 'files', items: [] }, '*'); } catch (e) {}
@@ -964,7 +840,7 @@ __VIDEO_DATA__
       if (!est) return;
       const it = items.find(i => i.id === est.cueId);
       let name, sub, t = '—', left = '—', pct = 0;
-      if (est.mode === 'fondos') { name = 'Fondos animados'; sub = `${bgLabel(est.current)}${est.rotar ? ' · rotación automática' : ' · fijo'}`; }
+      if (est.mode === 'fondos') { name = 'Fondos'; sub = est.current ? `${bgLabel(est.current)}${est.rotar ? ' · rotación automática' : ' · fijo'}` : 'Sin fondos cargados: pantalla en negro'; }
       else if (est.mode === 'negro') { name = 'Negro'; sub = 'Pantalla en negro'; }
       else {
         name = it ? it.label : 'Contenido'; sub = it ? KIND_TXT[it.kind] : '';
@@ -987,7 +863,7 @@ __VIDEO_DATA__
       $('musLeft').textContent = m && m.dur ? '−' + fmt(m.dur - m.t) : '—';
       for (const b of document.querySelectorAll('[data-bg]')) {
         const k = b.dataset.bg;
-        b.classList.toggle('on', est.mode === 'fondos' ? (k === 'rotar' ? est.rotar : (!est.rotar && k === est.current) || (k === est.current && esVideo(k))) : est.mode === 'negro' && k === 'negro');
+        b.classList.toggle('on', est.mode === 'fondos' ? (k === 'rotar' ? est.rotar : (!est.rotar && k === est.current)) : est.mode === 'negro' && k === 'negro');
       }
       if ((est.mode === 'fondos' ? est.current : null) !== bgLive) renderBg();
       const liveKey = (est.mode === 'media' ? est.cueId : '') + '|' + (m ? m.id : '');
@@ -1011,8 +887,7 @@ __VIDEO_DATA__
     }
     function fondos(which) {
       if (which === 'negro') return send({ type: 'cmd', cmd: 'negro' }) && toast('Negro');
-      if (which === 'rotar' || !which) return send({ type: 'cmd', cmd: 'fondos', which: null, rotar: true }) && toast('Fondos animados');
-      if (esVideo(which)) return send({ type: 'cmd', cmd: 'fondos', which }) && toast(bgLabel(which));
+      if (which === 'rotar' || !which) return send({ type: 'cmd', cmd: 'fondos', which: null, rotar: true }) && toast('Fondos');
       send({ type: 'cmd', cmd: 'fondos', which, rotar: false }) && toast('Fondo fijo: ' + bgLabel(which));
     }
     for (const b of document.querySelectorAll('[data-bg]')) b.addEventListener('click', () => fondos(b.dataset.bg));
@@ -1037,7 +912,7 @@ __VIDEO_DATA__
     volIn.addEventListener('input', () => setVol(volIn.value / 100));
     volIn.addEventListener('change', () => volIn.blur());
     // tras un clic con el mouse, soltar el foco para que Espacio siempre lance el siguiente
-    document.addEventListener('click', e => { const b = e.target.closest('button'); if (b && e.detail > 0) b.blur(); });
+    document.addEventListener('click', e => { const b = e.target.closest('button, summary'); if (b && e.detail > 0) b.blur(); });
 
     function handleKey(key) {
       const k = key.length === 1 ? key.toLowerCase() : key;
@@ -1088,7 +963,6 @@ __VIDEO_DATA__
       if (!alive() || !est) { n.textContent = 'Se aplica al conectar la pantalla del proyector.'; return; }
       if (est.mode !== 'fondos') n.textContent = 'Los fondos no están al aire.';
       else if (!est.rotar) n.textContent = 'Fondo fijo: no cambia solo.';
-      else if (esVideo(est.current)) n.textContent = 'Pasando: ' + bgLabel(est.current) + '.';
       else if (est.nextIn != null) n.innerHTML = 'Próximo cambio en <b>' + fmt(est.nextIn) + '</b>';
       else n.textContent = '—';
     }
