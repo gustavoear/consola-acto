@@ -26,6 +26,11 @@ MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp
         '.svg': 'image/svg+xml', '.gif': 'image/gif', '.avif': 'image/avif',
         '.mp4': 'video/mp4', '.webm': 'video/webm', '.m4v': 'video/mp4'}
 TEXTOS = ('titulo', 'institucion', 'numero', 'unidad', 'anios', 'lema')
+# colores que entiende cada parte: los generales y los propios de algunos tipos de fondo
+COLORES = {'fondo', 'acento', 'texto'}
+COLORES_TIPO = {'escudo': {'fondo_abajo', 'brasas'}, 'logo': {'papel'}, 'bordado': {'hilos'}}
+LISTAS = {'papel': 1, 'hilos': 2}  # colores que van en lista, con su cantidad mínima
+HEX = re.compile(r'#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})')
 
 
 class ErrorEvento(Exception):
@@ -47,6 +52,22 @@ def archivo(carpeta: pathlib.Path, nombre, donde: str) -> pathlib.Path:
     return f
 
 
+def colores(c, permitidos: set, donde: str) -> None:
+    if c is None:
+        return
+    if not isinstance(c, dict):
+        raise ErrorEvento(f'{donde}: "colores" tiene que ser un objeto {{…}}')
+    for k, v in c.items():
+        if k not in permitidos:
+            raise ErrorEvento(f'{donde}: no conozco el color "{k}" (se puede usar: {", ".join(sorted(permitidos))})')
+        lista = v if k in LISTAS else [v]
+        if k in LISTAS and (not isinstance(v, list) or len(v) < LISTAS[k]):
+            raise ErrorEvento(f'{donde}: "{k}" tiene que ser una lista de al menos {LISTAS[k]} colores')
+        for x in lista:
+            if not isinstance(x, str) or not HEX.fullmatch(x):
+                raise ErrorEvento(f'{donde}: el color "{k}" tiene que ser como "#e2b85c", no {json.dumps(x, ensure_ascii=False)}')
+
+
 def leer_evento(carpeta: pathlib.Path) -> dict:
     j = carpeta / 'evento.json'
     if not j.is_file():
@@ -65,6 +86,7 @@ def leer_evento(carpeta: pathlib.Path) -> dict:
     for k in TEXTOS:
         if not isinstance(ev.get(k, ''), str):
             raise ErrorEvento(f'El campo "{k}" tiene que ser un texto')
+    colores(ev.get('colores'), COLORES, j.name)
     fondos = ev.get('fondos')
     if not isinstance(fondos, list) or not fondos:
         raise ErrorEvento(f'Falta la lista "fondos" en {j.name}')
@@ -78,6 +100,7 @@ def leer_evento(carpeta: pathlib.Path) -> dict:
         vistos.add(f['tipo'])
         if not isinstance(f.get('nombre'), str) or not f['nombre'].strip():
             raise ErrorEvento(f'{donde}: falta "nombre"')
+        colores(f.get('colores'), COLORES | COLORES_TIPO.get(f['tipo'], set()), donde)
         if f['tipo'] in IMAGENES:
             archivo(carpeta, f.get('imagen'), donde)
         if f['tipo'] == 'video':

@@ -16,6 +16,8 @@ Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `evento
 
 - Campos: `id` (minúsculas y guiones; se usa en el nombre del archivo, la clave de `localStorage` y el nombre de la ventana), `titulo`, `institucion` (obligatorios), y `numero`, `unidad`, `anios`, `lema` (opcionales: si faltan, se ocultan).
 - `fondos`: lista de `{tipo, nombre, imagen | archivo, alt?}`. Tipos: `escudo`, `aniversario`, `logo`, `bordado` y `video` (con `rotulos: [{desde, hasta?, texto, sub?}]`, en segundos; sin `hasta`, el rótulo queda hasta el final).
+- `colores` (opcional, general y también por fondo): `fondo`, `acento`, `texto` en hex. Además, `escudo` acepta `fondo_abajo` y `brasas`, `logo` acepta `papel` (lista para el papel picado) y `bordado` acepta `hilos` (dos colores). `paleta(tipo)` mezcla los del fondo con los generales y pone valores por defecto. Las variantes (centro y borde de los degradés, halos, rayos) salen de `luz()` y `escala()`, que cambian la luminosidad en HSL sin cambiar el tono. Los colores de Cristo Rey están puestos tal cual en su `evento.json`, así que se ve igual que en el acto.
+- Los colores de la **consola** no cambian por evento: el rojo ("al aire") y el dorado ("siguiente") son parte de la interfaz.
 - En las escenas, los textos llevan `data-ev="campo"` y los completa `fillEv()`. `data-ev-si` oculta un bloque si el campo está vacío, y `data-tipo` toma el `aria-label` y el `alt` del fondo.
 - Por ahora las escenas son fijas: `escudo`, `logo` y `bordado` son obligatorios, va uno de cada tipo, y las claves internas siguen siendo `escudo`, `historia`, `aniversario`, `logo` y `sokoly`.
 
@@ -87,8 +89,8 @@ En `localStorage['consola-acto:<id>']`: nombre, sonido, "al terminar", repetici�
 ## Qué está atado al acto de los 70 años (para volverlo genérico)
 
 - ~~Textos, títulos, etiquetas de los fondos, clave de `localStorage` y tiempos de los rótulos~~: ya salen de `evento.json` (paso 1).
-- **Colores** fijos en `src/pantalla.css` y `src/dibujo.js` (paso 2).
+- ~~Colores fijos en `src/pantalla.css` y `src/dibujo.js`~~: salen de `colores` (paso 2).
 - **Imágenes y video** en `eventos/cristo-rey-70/` (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia). **Son de la institución y del grupo de danzas:** antes de publicar el repositorio, confirmar si se pueden subir. Mientras tanto quedan fuera de git; falta agregar un evento de ejemplo en `ejemplos/generico/` (paso 4).
 - **Fondos animados de diseño propio** (`escudo`, `aniversario`, `logo`, `sokoly`): para hacerlos genéricos, conviene que tomen de configuración el logo, los textos y la paleta, y que la lista `BUILTIN` y las escenas se generen a partir de esa configuración.
 
-Plan en curso: 1) `evento.json` + textos (hecho), 2) colores, 3) escenas y `BUILTIN` generadas desde `fondos` (con `rota: false` en lugar de la excepción de `sokoly` en `inRot`), 4) `ejemplos/generico/` como evento por defecto.
+Plan en curso: 1) `evento.json` + textos (hecho), 2) colores (hecho), 3) escenas y `BUILTIN` generadas desde `fondos` (con `rota: false` en lugar de la excepción de `sokoly` en `inRot`), 4) `ejemplos/generico/` como evento por defecto.

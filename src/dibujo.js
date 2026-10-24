@@ -4,6 +4,16 @@
   const A = mkCanvas('cA'), B = mkCanvas('cB'), L = mkCanvas('cL'), S = mkCanvas('cS');
   let dustA = [], embB = [], confL = [];
   const rnd = Math.random;
+  // colores de cada fondo (evento.json): las variantes salen de cambiar la luminosidad del color base
+  const PA = paleta('aniversario'), PB = paleta('escudo'), PL = paleta('logo'), PS = paleta('bordado');
+  const A_COL = { centro: escala(PA.fondo, 1.37), borde: escala(PA.fondo, .44), rayo: rgb(PA.acento), halo: rgb(luz(PA.acento, .83, 1)),
+    polvo: rgb(luz(PA.acento, .79, 1)), brillo: rgb(luz(PA.acento, .735, 1)) };
+  const B_COL = { arriba: escala(PB.fondo, .63), rayo: rgb(PB.acento), halo: [.92, .81, .75].map(l => rgb(luz(PB.acento, l, 1))),
+    brasa: [rgb(luz(PB.brasas, .68, 1)), rgb(PB.brasas), rgb(luz(PB.acento, .79, 1))] };
+  const L_COL = { centro: escala(PL.fondo, 1.45), borde: escala(PL.fondo, .46), rayo: rgb(luz(PL.fondo, .87, 1)),
+    luz: [.98, .93, .89].map(l => rgb(luz(PL.fondo, l, 1))) };
+  const S_COL = { centro: escala(PS.fondo, 1.68), borde: escala(PS.fondo, .4), hilo1: rgb(PS.hilos[0]),
+    brillo: rgb(luz(PS.fondo, .62, 1)), franja: `rgba(${rgb(escala(PS.fondo, .57))},.55)` };
   const dust = (W, H, any) => ({ x: rnd() * W, y: any ? rnd() * H : H + 10, r: (rnd() * 1.8 + .4) * dpr, v: (rnd() * .25 + .08) * dpr, sw: rnd() * 6.28, tw: rnd() * .02 + .005, a: rnd() * .6 + .25 });
   const ember = (W, H, any) => ({ x: rnd() * W, y: any ? rnd() * H : H + 20 * dpr, r: (rnd() * 2.2 + .6) * dpr, v: (rnd() * .5 + .2) * dpr, ph: rnd() * 6.28, f: rnd() * .05 + .02, hot: rnd() });
   function size() {
@@ -14,8 +24,8 @@
     makeTiles();
     confL = Array.from({ length: Math.round(innerWidth * innerHeight / 16000) }, () => conf(L.W, L.H, true));
   }
-  // papel picado en los colores del logo: azul, verde laurel, plata y blanco
-  const CONF_COL = ['#2f6fe0', '#1d4fb8', '#3fae49', '#7ccf5a', '#d9dee6', '#ffffff', '#e2b85c'];
+  // papel picado en los colores del logo (colores.papel)
+  const CONF_COL = PL.papel;
   function conf(W, H, any) {
     return { x: rnd() * W, y: any ? rnd() * H : -20 * dpr, w: (rnd() * 8 + 5) * dpr, h: (rnd() * 4 + 3) * dpr,
       v: (rnd() * .6 + .35) * dpr, sw: rnd() * 6.28, sws: rnd() * .02 + .008, rot: rnd() * 6.28, rs: (rnd() - .5) * .06,
@@ -27,22 +37,22 @@
     const r = logoImg.getBoundingClientRect();
     const cx = (r.left + r.width / 2) * dpr, cy = (r.top + r.height / 2) * dpr, cr = Math.max(r.width, r.height) * dpr;
     const g = x.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * .8);
-    g.addColorStop(0, '#1f4fa8'); g.addColorStop(.4, '#123578'); g.addColorStop(1, '#06143a');
+    g.addColorStop(0, L_COL.centro); g.addColorStop(.4, PL.fondo); g.addColorStop(1, L_COL.borde);
     x.fillStyle = g; x.fillRect(0, 0, W, H);
-    // rayos azul claro que giran detrás del medallón
+    // rayos claros que giran detrás del medallón
     x.save(); x.translate(cx, cy); x.rotate(t * .0004);
     const rays = 32, R = Math.hypot(W, H);
     for (let i = 0; i < rays; i++) {
       x.rotate(Math.PI * 2 / rays);
       const a = .06 + .03 * Math.sin(t * .01 + i * .9), rg = x.createLinearGradient(0, 0, R, 0);
-      rg.addColorStop(.1, `rgba(190,215,255,${a})`); rg.addColorStop(.8, 'rgba(190,215,255,0)');
+      rg.addColorStop(.1, `rgba(${L_COL.rayo},${a})`); rg.addColorStop(.8, `rgba(${L_COL.rayo},0)`);
       x.fillStyle = rg; x.beginPath(); x.moveTo(0, 0); x.lineTo(R, -R * .03); x.lineTo(R, R * .03); x.closePath(); x.fill();
     }
     x.restore();
-    // medallón de luz blanca para que el azul del logo resalte
+    // medallón de luz blanca para que el logo resalte
     const p = .96 + .04 * Math.sin(t * .012), mr = cr * .9, m = x.createRadialGradient(cx, cy, 0, cx, cy, mr);
-    m.addColorStop(0, `rgba(255,255,255,${p})`); m.addColorStop(.6, `rgba(246,250,255,${p * .95})`);
-    m.addColorStop(.8, `rgba(220,234,255,${p * .4})`); m.addColorStop(1, 'rgba(200,222,255,0)');
+    m.addColorStop(0, `rgba(255,255,255,${p})`); m.addColorStop(.6, `rgba(${L_COL.luz[0]},${p * .95})`);
+    m.addColorStop(.8, `rgba(${L_COL.luz[1]},${p * .4})`); m.addColorStop(1, `rgba(${L_COL.luz[2]},0)`);
     x.fillStyle = m; x.beginPath(); x.arc(cx, cy, mr, 0, Math.PI * 2); x.fill();
     // papel picado que cae
     for (const q of confL) {
@@ -60,26 +70,26 @@
   function drawA(t) {
     const { x, W, H } = A;
     const g = x.createRadialGradient(W/2, H*.48, 0, W/2, H*.48, Math.max(W, H) * .75);
-    g.addColorStop(0, '#1d3468'); g.addColorStop(.45, '#13254f'); g.addColorStop(1, '#070e24');
+    g.addColorStop(0, A_COL.centro); g.addColorStop(.45, PA.fondo); g.addColorStop(1, A_COL.borde);
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     x.save(); x.translate(W/2, H*.48); x.rotate(t * .0006);
     const R = Math.hypot(W, H), rays = 24;
     for (let i = 0; i < rays; i++) {
       x.rotate(Math.PI * 2 / rays);
       const p = .035 + .02 * Math.sin(t * .01 + i), rg = x.createLinearGradient(0, 0, R, 0);
-      rg.addColorStop(0, `rgba(227,187,99,${p})`); rg.addColorStop(1, 'rgba(227,187,99,0)');
+      rg.addColorStop(0, `rgba(${A_COL.rayo},${p})`); rg.addColorStop(1, `rgba(${A_COL.rayo},0)`);
       x.fillStyle = rg; x.beginPath(); x.moveTo(0, 0); x.lineTo(R, -R * .045); x.lineTo(R, R * .045); x.closePath(); x.fill();
     }
     x.restore();
     const h = x.createRadialGradient(W/2, H*.48, 0, W/2, H*.48, Math.min(W, H) * .45);
-    h.addColorStop(0, `rgba(255,231,170,${.10 + .03 * Math.sin(t * .015)})`); h.addColorStop(1, 'rgba(255,231,170,0)');
+    h.addColorStop(0, `rgba(${A_COL.halo},${.10 + .03 * Math.sin(t * .015)})`); h.addColorStop(1, `rgba(${A_COL.halo},0)`);
     x.fillStyle = h; x.fillRect(0, 0, W, H);
     for (const p of dustA) {
       p.y -= p.v; p.sw += p.tw; p.x += Math.sin(p.sw) * .25 * dpr;
       if (p.y < -10) Object.assign(p, dust(W, H, false));
       x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      x.fillStyle = `rgba(255,226,150,${p.a * (.6 + .4 * Math.sin(p.sw * 3))})`;
-      x.shadowColor = 'rgba(255,210,120,.9)'; x.shadowBlur = 8 * dpr; x.fill();
+      x.fillStyle = `rgba(${A_COL.polvo},${p.a * (.6 + .4 * Math.sin(p.sw * 3))})`;
+      x.shadowColor = `rgba(${A_COL.brillo},.9)`; x.shadowBlur = 8 * dpr; x.fill();
     }
     x.shadowBlur = 0;
   }
@@ -90,26 +100,26 @@
     const r = crest.getBoundingClientRect();
     const cx = (r.left + r.width / 2) * dpr, cy = (r.top + r.height * .5) * dpr, cr = Math.max(r.width, r.height) * dpr;
     const g = x.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#070f22'); g.addColorStop(.6, '#0b1d36'); g.addColorStop(1, '#0f3b3e');
+    g.addColorStop(0, B_COL.arriba); g.addColorStop(.6, PB.fondo); g.addColorStop(1, PB.fondo_abajo);
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     x.save(); x.translate(cx, cy); x.rotate(-t * .0005);
     const rays = 48, R = cr * 1.6;
     for (let i = 0; i < rays; i++) {
       x.rotate(Math.PI * 2 / rays);
       const a = .05 + .03 * Math.sin(t * .012 + i * .7), rg = x.createLinearGradient(0, 0, R, 0);
-      rg.addColorStop(.15, `rgba(226,184,92,${a})`); rg.addColorStop(1, 'rgba(226,184,92,0)');
+      rg.addColorStop(.15, `rgba(${B_COL.rayo},${a})`); rg.addColorStop(1, `rgba(${B_COL.rayo},0)`);
       x.fillStyle = rg; x.beginPath(); x.moveTo(0, 0); x.lineTo(R, -R * .02); x.lineTo(R, R * .02); x.closePath(); x.fill();
     }
     x.restore();
     const pulse = .5 + .06 * Math.sin(t * .013), h = x.createRadialGradient(cx, cy, 0, cx, cy, cr * .62);
-    h.addColorStop(0, `rgba(255,244,214,${pulse})`); h.addColorStop(.55, `rgba(255,226,160,${pulse * .45})`); h.addColorStop(1, 'rgba(255,214,140,0)');
+    h.addColorStop(0, `rgba(${B_COL.halo[0]},${pulse})`); h.addColorStop(.55, `rgba(${B_COL.halo[1]},${pulse * .45})`); h.addColorStop(1, `rgba(${B_COL.halo[2]},0)`);
     x.fillStyle = h; x.fillRect(0, 0, W, H);
     x.globalCompositeOperation = 'lighter';
     for (const p of embB) {
       p.y -= p.v; p.ph += p.f; p.x += Math.sin(p.ph) * .4 * dpr;
       if (p.y < -20) Object.assign(p, ember(W, H, false));
       const life = Math.min(1, p.y / H + .15), fl = .55 + .45 * Math.sin(p.ph * 2.3);
-      const col = p.hot > .6 ? '255,180,90' : p.hot > .25 ? '240,138,44' : '255,226,150';
+      const col = B_COL.brasa[p.hot > .6 ? 0 : p.hot > .25 ? 1 : 2];
       const s = p.r * 4, eg = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, s);
       eg.addColorStop(0, `rgba(${col},${.8 * life * fl})`); eg.addColorStop(1, `rgba(${col},0)`);
       x.fillStyle = eg; x.fillRect(p.x - s, p.y - s, s * 2, s * 2);
@@ -118,7 +128,7 @@
   }
 
   // ===== Вільні Соколи: bordado (vyshyvanka) en punto cruz =====
-  // motivo romboidal con estrella de ocho puntas, como el del logo; 1 = rojo, 2 = blanco
+  // motivo romboidal con estrella de ocho puntas, como el del logo; 1 y 2 = colores.hilos (rojo y blanco en Sokoly)
   function motif(n) {
     const c = (n - 1) / 2, m = [];
     for (let i = 0; i < n; i++) { m.push([]); for (let j = 0; j < n; j++) {
@@ -138,7 +148,7 @@
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
       if (!m[i][j]) continue;
       const px = pad + j * cell, py = pad + i * cell, s = cell * .82, o = (cell - s) / 2;
-      x.fillStyle = m[i][j] === 1 ? '#d8202f' : '#f4f1ea';
+      x.fillStyle = PS.hilos[m[i][j] - 1];
       // punto cruz: dos diagonales gruesas
       x.save(); x.translate(px + cell / 2, py + cell / 2); x.rotate(Math.PI / 4);
       x.fillRect(-s * .62, -s * .17, s * 1.24, s * .34); x.fillRect(-s * .17, -s * .62, s * .34, s * 1.24);
@@ -152,10 +162,10 @@
     // franja lateral tipo rushnyk: motivos apilados con bordes de punto cruz
     const tile = stitchTile(motif(11), cell, 0), w = tile.width + cell * 6, h = tile.height + cell * 4;
     const b = document.createElement('canvas'); b.width = w; b.height = h; const x = b.getContext('2d');
-    x.fillStyle = 'rgba(8,14,40,.55)'; x.fillRect(0, 0, w, h);
+    x.fillStyle = S_COL.franja; x.fillRect(0, 0, w, h);
     x.drawImage(tile, cell * 3, cell * 2);
     for (let k = 0; k < h; k += cell * 2) {
-      x.fillStyle = (k / (cell * 2)) % 2 ? '#d8202f' : '#f4f1ea';
+      x.fillStyle = PS.hilos[(k / (cell * 2)) % 2 ? 0 : 1];
       x.fillRect(cell * .6, k + cell * .5, cell, cell); x.fillRect(w - cell * 1.6, k + cell * .5, cell, cell);
     }
     bandTile = b; bandW = w;
@@ -166,15 +176,15 @@
     const r = sokImg.getBoundingClientRect();
     const cx = (r.left + r.width / 2) * dpr, cy = (r.top + r.height / 2) * dpr, cr = Math.min(r.width, r.height) * dpr / 2;
     const g = x.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * .75);
-    g.addColorStop(0, '#13307a'); g.addColorStop(.5, '#0a1a4a'); g.addColorStop(1, '#040a1e');
+    g.addColorStop(0, S_COL.centro); g.addColorStop(.5, PS.fondo); g.addColorStop(1, S_COL.borde);
     x.fillStyle = g; x.fillRect(0, 0, W, H);
-    // resplandor rojo y azul que late detrás del emblema
+    // resplandor (color del primer hilo y del fondo) que late detrás del emblema
     const p = .5 + .5 * Math.sin(t * .02);
     let h = x.createRadialGradient(cx, cy, cr * .7, cx, cy, cr * 1.5);
-    h.addColorStop(0, `rgba(216,32,47,${.18 + .12 * p})`); h.addColorStop(1, 'rgba(216,32,47,0)');
+    h.addColorStop(0, `rgba(${S_COL.hilo1},${.18 + .12 * p})`); h.addColorStop(1, `rgba(${S_COL.hilo1},0)`);
     x.fillStyle = h; x.fillRect(0, 0, W, H);
     h = x.createRadialGradient(cx, cy, cr * .9, cx, cy, cr * 1.9);
-    h.addColorStop(0, `rgba(60,130,255,${.22 + .1 * (1 - p)})`); h.addColorStop(1, 'rgba(60,130,255,0)');
+    h.addColorStop(0, `rgba(${S_COL.brillo},${.22 + .1 * (1 - p)})`); h.addColorStop(1, `rgba(${S_COL.brillo},0)`);
     x.fillStyle = h; x.fillRect(0, 0, W, H);
     // anillo de estrellas bordadas que gira alrededor del emblema
     if (starTile) {

@@ -271,6 +271,30 @@ __VIDEO_DATA__
   // configuración del evento (evento.json), embebida por build.py
   const EV = JSON.parse($('evento').textContent);
   const FONDO = Object.fromEntries(EV.fondos.map(f => [f.tipo, f]));
+
+  // ----- colores del evento -----
+  // las variantes de cada color (más claro, más oscuro) se calculan en HSL, conservando el tono
+  const hexRgb = h => { h = h.slice(1); if (h.length === 3) h = [...h].map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  function hsl(c) {
+    const [r, g, b] = hexRgb(c).map(v => v / 255), max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    if (!d) return [0, 0, l];
+    const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, d / (1 - Math.abs(2 * l - 1)), l];
+  }
+  function hex(h, s, l) {
+    const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    return '#' + [0, 8, 4].map(n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, '0')).join('');
+  }
+  // luz: el mismo tono con otra luminosidad (0 a 1) y, si se indica, otra saturación; escala: luminosidad multiplicada
+  const luz = (c, l, s) => { const [h, s0] = hsl(c); return hex(h, s == null ? s0 : s, l); };
+  const escala = (c, k) => { const [h, s, l] = hsl(c); return hex(h, s, Math.min(1, l * k)); };
+  const rgb = c => hexRgb(c).join(',');
+  const COL = Object.assign({ fondo: '#13254f', acento: '#e2b85c', texto: '#f4ecd9' }, EV.colores);
+  // colores de un fondo: los suyos (fondos[].colores) sobre los generales del evento
+  function paleta(tipo) {
+    const c = Object.assign({}, COL, (FONDO[tipo] || {}).colores);
+    return Object.assign({ fondo_abajo: c.fondo, brasas: '#f08a2c', papel: [c.acento, luz(c.acento, .88), c.texto, luz(c.fondo, .55)], hilos: [c.acento, c.texto] }, c);
+  }
   // completa los textos marcados con data-ev; los que quedan vacíos se ocultan
   function fillEv(root) {
     for (const el of root.querySelectorAll('[data-ev]')) { el.textContent = EV[el.dataset.ev] || ''; el.hidden = !EV[el.dataset.ev]; }
@@ -292,6 +316,16 @@ __VIDEO_DATA__
     document.title = 'Proyector · ' + EV.titulo;
     document.body.appendChild($('tplPantalla').content.cloneNode(true));
     fillEv(document.body);
+    const css = (el, k, v) => el.style.setProperty(k, v);
+    css(document.documentElement, '--gold', COL.acento);
+    css(document.documentElement, '--gold-hi', luz(COL.acento, .88));
+    css(document.documentElement, '--gold-lo', luz(COL.acento, .38));
+    css(document.documentElement, '--text', COL.texto);
+    css(document.documentElement, '--ink', escala(COL.fondo, .45));
+    css($('sB'), '--brasas', paleta('escudo').brasas);
+    css($('sL'), '--sombra', `rgba(${rgb(escala(paleta('logo').fondo, .8))},.35)`);
+    css($('sS'), '--brillo1', `rgba(${rgb(luz(paleta('bordado').fondo, .58, 1))},.45)`);
+    css($('sS'), '--brillo2', `rgba(${rgb(paleta('bordado').hilos[0])},.35)`);
     const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3 };
     // rotación: claves de fondos propios (escudo, logo…) o 'u:<id>' para imágenes y videos agregados
     let rot = ['escudo', 'historia', 'aniversario', 'logo'], bgKinds = {}, curKey = null, uSlot = 'u2';
@@ -673,11 +707,11 @@ __VIDEO_DATA__
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const tplP = $('tplPantalla').content;
     const BUILTIN = [
-      { key: 'escudo', tipo: 'escudo', src: '#crest', bgc: '#0b1d36' },
-      { key: 'historia', tipo: 'video', txt: ((FONDO.video || {}).rotulos || [{}])[0].texto || '▶', bgc: '#4a3a28' },
-      { key: 'aniversario', tipo: 'aniversario', txt: EV.numero || '★', bgc: '#13254f' },
-      { key: 'logo', tipo: 'logo', src: '#logo70', bgc: '#eef3ff' },
-      { key: 'sokoly', tipo: 'bordado', src: '#sokoly', bgc: '#0a1a4a' }
+      { key: 'escudo', tipo: 'escudo', src: '#crest', bgc: paleta('escudo').fondo },
+      { key: 'historia', tipo: 'video', txt: ((FONDO.video || {}).rotulos || [{}])[0].texto || '▶', bgc: luz(COL.acento, .22, .3) },
+      { key: 'aniversario', tipo: 'aniversario', txt: EV.numero || '★', bgc: paleta('aniversario').fondo },
+      { key: 'logo', tipo: 'logo', src: '#logo70', bgc: luz(paleta('logo').fondo, .97) },
+      { key: 'sokoly', tipo: 'bordado', src: '#sokoly', bgc: paleta('bordado').fondo }
     ].filter(b => FONDO[b.tipo]).map(b => ({ ...b, label: FONDO[b.tipo].nombre, builtin: true }));
     // miniaturas chicas de los logos, para no repetir imágenes pesadas en la lista
     for (const b of BUILTIN) if (b.src) {

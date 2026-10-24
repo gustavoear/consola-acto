@@ -84,6 +84,8 @@ def main() -> int:
         if video:
             check('rótulos del video', str(p.eval_on_selector_all('#sV .yr', 'els => els.map(e => e.firstChild.textContent)')),
                   str([r['texto'] for r in video.get('rotulos', [])]))
+        if ev.get('colores', {}).get('acento'):
+            check('color de acento', p.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--gold')"), ev['colores']['acento'])
         check('clave guardada', str(c.evaluate('Object.keys(localStorage)')), 'consola-acto:' + ev['id'])
         c.keyboard.press('Space'); p.wait_for_timeout(1500)
         check('lanzar video', c.inner_text('#airName'), 'Danza')

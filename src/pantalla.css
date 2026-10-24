@@ -1,4 +1,5 @@
-/* Layout: tres escenas a pantalla completa superpuestas (fondo escudo, video de la historia, fondo aniversario) que se funden entre sí */
+/* Layout: escenas a pantalla completa superpuestas (fondos animados, video, contenidos) que se funden entre sí */
+/* los colores de acá son los de respaldo: la pantalla los reemplaza con los de evento.json */
 :root {
   --ink: #081226;        /* azul noche */
   --gold: #e2b85c;       /* oro principal */
@@ -37,7 +38,7 @@ body.no-text .txt { opacity: 0 !important; }
   filter: drop-shadow(0 1.2vmin 2.4vmin rgba(0,0,0,.45)); animation: breathe 9s ease-in-out infinite; }
 .b-copy { display: grid; justify-items: start; gap: 1.6vmin; min-width: 0; }
 .b-copy .big { display: flex; align-items: baseline; gap: 1.6vmin; }
-.b-copy .num { font-size: clamp(80px, 36vmin, 560px); filter: drop-shadow(0 0 3vmin rgba(240,138,44,.25)); }
+.b-copy .num { font-size: clamp(80px, 36vmin, 560px); filter: drop-shadow(0 0 3vmin color-mix(in srgb, var(--brasas, #f08a2c) 25%, transparent)); }
 .b-copy .anos { font-size: clamp(32px, 11vmin, 170px); }
 .b-copy .rule { width: 100%; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
 .b-copy .years { letter-spacing: .4em; font-size: clamp(14px, 3.6vmin, 58px); }
@@ -49,19 +50,19 @@ body.no-text .txt { opacity: 0 !important; }
 .a-emblem .inst { font-family: var(--display); font-weight: 500; letter-spacing: .32em; text-transform: uppercase;
   font-size: clamp(12px, 2.4vmin, 40px); color: var(--gold); margin: 0; }
 .a-emblem .big { display: flex; align-items: baseline; justify-content: center; gap: 2vmin; }
-.a-emblem .num { font-size: clamp(90px, 34vmin, 520px); filter: drop-shadow(0 0 3vmin rgba(227,187,99,.28)); }
+.a-emblem .num { font-size: clamp(90px, 34vmin, 520px); filter: drop-shadow(0 0 3vmin color-mix(in srgb, var(--gold) 28%, transparent)); }
 .a-emblem .anos { font-size: clamp(34px, 11vmin, 170px); }
 .a-emblem .years { letter-spacing: .45em; font-size: clamp(14px, 3.4vmin, 56px); display: flex; align-items: center; gap: 2.4vmin; }
 .a-emblem .years::before, .a-emblem .years::after { content: ""; width: 8vmin; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
 .a-emblem .years::after { transform: scaleX(-1); }
 .a-emblem .lema { font-size: clamp(14px, 3vmin, 48px); margin-top: 1.4vmin; max-width: 60ch; }
 
-/* Escena D: logo de los 70 años sobre un medallón de luz */
+/* Escena D: logo sobre un medallón de luz */
 .l-stage { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 2.4vmin; padding-inline: 4vw; text-align: center; }
 .logo70 { height: 70vh; max-height: 74vmin; width: auto; max-width: 86vw;
-  filter: drop-shadow(0 1vmin 2vmin rgba(10,40,110,.35)); animation: breathe 9s ease-in-out infinite; }
+  filter: drop-shadow(0 1vmin 2vmin var(--sombra, rgba(10,40,110,.35))); animation: breathe 9s ease-in-out infinite; }
 
-/* Escena B: video de la historia */
+/* Escena B: video con rótulos */
 #sV { background: #000; overflow: hidden; }
 #vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 55% 45%; }
 #sV.on #vid.zoom { animation: kb 13s ease-out both; }
@@ -96,8 +97,8 @@ body.idle .hint { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .num, .crest, #sV.on #vid.zoom { animation: none; } }
 
-/* Escena E: Вільні Соколи, logo sobre bordado ucraniano */
+/* Escena E: logo sobre bordado en punto cruz (Вільні Соколи en Cristo Rey) */
 .s-stage { position: absolute; inset: 0; display: grid; place-items: center; padding-inline: 4vw; }
 .sokoly { height: 74vh; max-height: 78vmin; width: auto; max-width: 70vw;
-  filter: drop-shadow(0 0 3vmin rgba(40,110,255,.45)) drop-shadow(0 0 1.2vmin rgba(230,40,60,.35));
+  filter: drop-shadow(0 0 3vmin var(--brillo1, rgba(40,110,255,.45))) drop-shadow(0 0 1.2vmin var(--brillo2, rgba(230,40,60,.35)));
   animation: breathe 8s ease-in-out infinite; }
