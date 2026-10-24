@@ -77,15 +77,20 @@ def main() -> int:
         check('encabezado', c.inner_text('.c-brand'), ev['institucion'])
         check('fondos de la consola', str(c.eval_on_selector_all('#bgList .bgname b', 'els => els.map(e => e.textContent)')),
               str([f['nombre'] for f in ev['fondos']]))
-        for campo, sel in (('lema', '#sA .lema'), ('anios', '#sA .years'), ('numero', '#sA .num'), ('institucion', '#sA .inst')):
-            if ev.get(campo):
+        aniv = 'section.scene[data-tipo="aniversario"] '
+        for campo, sel in (('lema', aniv + '.lema'), ('anios', aniv + '.years'), ('numero', aniv + '.num'), ('institucion', aniv + '.inst')):
+            if ev.get(campo) and any(f['tipo'] == 'aniversario' for f in ev['fondos']):
                 check('pantalla: ' + campo, p.text_content(sel), ev[campo])
         video = next((f for f in ev['fondos'] if f['tipo'] == 'video'), None)
         if video:
-            check('rótulos del video', str(p.eval_on_selector_all('#sV .yr', 'els => els.map(e => e.firstChild.textContent)')),
+            check('rótulos del video', str(p.eval_on_selector_all('section.scene[data-tipo="video"] .yr', 'els => els.map(e => e.firstChild.textContent)')),
                   str([r['texto'] for r in video.get('rotulos', [])]))
         if ev.get('colores', {}).get('acento'):
             check('color de acento', p.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--gold')"), ev['colores']['acento'])
+        check('una escena por fondo', str(p.locator('section.scene[data-clave]').count()), str(len(ev['fondos'])))
+        for f in ev['fondos']:
+            if f.get('rota') is False:
+                check('fuera de la rotación: ' + f['nombre'], c.locator('#bgList .bgrow', has_text=f['nombre']).locator('.bgname small').inner_text(), 'no rota')
         check('clave guardada', str(c.evaluate('Object.keys(localStorage)')), 'consola-acto:' + ev['id'])
         c.keyboard.press('Space'); p.wait_for_timeout(1500)
         check('lanzar video', c.inner_text('#airName'), 'Danza')
@@ -116,6 +121,12 @@ def main() -> int:
         c.locator('.c-row').first.locator('select[data-act="end"]').select_option('repetir'); p.wait_for_timeout(6500)
         check('repetir', c.inner_text('#airName'), 'Danza')
         check('repetir (sigue reproduciendo)', str(p.evaluate("[...document.querySelectorAll('section.media.on video')].some(v => v.loop && !v.paused)")), 'True')
+
+        # cada fondo del evento se puede dejar fijo y aparece en la pantalla
+        for f in ev['fondos']:
+            c.locator('#bgList .bgname', has_text=f['nombre']).click(); p.wait_for_timeout(700)
+            check('fondo fijo: ' + f['nombre'], p.eval_on_selector('section.scene.on', 'e => e.getAttribute("aria-label")'), f['nombre'])
+        c.keyboard.press('f'); p.wait_for_timeout(500)
 
         # fondos agregados y rotación
         c.keyboard.press('f'); p.wait_for_timeout(500)

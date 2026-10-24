@@ -34,7 +34,7 @@ body.no-text .txt { opacity: 0 !important; }
 
 /* Escena A: escudo a la izquierda, cifra a la derecha */
 .b-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6vw; padding-inline: 5vw; }
-.crest { height: 57.6vh; max-height: 62.4vmin; width: auto; max-width: 36vw; flex: none;
+.escudo-img { height: 57.6vh; max-height: 62.4vmin; width: auto; max-width: 36vw; flex: none;
   filter: drop-shadow(0 1.2vmin 2.4vmin rgba(0,0,0,.45)); animation: breathe 9s ease-in-out infinite; }
 .b-copy { display: grid; justify-items: start; gap: 1.6vmin; min-width: 0; }
 .b-copy .big { display: flex; align-items: baseline; gap: 1.6vmin; }
@@ -59,13 +59,13 @@ body.no-text .txt { opacity: 0 !important; }
 
 /* Escena D: logo sobre un medallón de luz */
 .l-stage { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 2.4vmin; padding-inline: 4vw; text-align: center; }
-.logo70 { height: 70vh; max-height: 74vmin; width: auto; max-width: 86vw;
+.logo-img { height: 70vh; max-height: 74vmin; width: auto; max-width: 86vw;
   filter: drop-shadow(0 1vmin 2vmin var(--sombra, rgba(10,40,110,.35))); animation: breathe 9s ease-in-out infinite; }
 
 /* Escena B: video con rótulos */
-#sV { background: #000; overflow: hidden; }
-#vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 55% 45%; }
-#sV.on #vid.zoom { animation: kb 13s ease-out both; }
+.s-video { background: #000; overflow: hidden; }
+.s-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 55% 45%; }
+.s-video.on video.zoom { animation: kb 13s ease-out both; }
 .vignette { position: absolute; inset: 0; background:
   radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(4,9,20,.55) 100%),
   linear-gradient(0deg, rgba(4,9,20,.6) 0%, rgba(4,9,20,0) 30%); }
@@ -91,14 +91,14 @@ body.idle .hint { opacity: 0; }
 @keyframes kb { from { transform: scale(1); } to { transform: scale(1.07); } }
 @media (max-aspect-ratio: 1/1) {
   .b-stage { flex-direction: column; gap: 3vh; text-align: center; }
-  .crest { height: 33.6vh; max-width: 64vw; }
+  .escudo-img { height: 33.6vh; max-width: 64vw; }
   .b-copy { justify-items: center; }
   .b-copy .rule { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 }
-@media (prefers-reduced-motion: reduce) { .num, .crest, #sV.on #vid.zoom { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .num, .escudo-img, .s-video.on video.zoom { animation: none; } }
 
 /* Escena E: logo sobre bordado en punto cruz (Вільні Соколи en Cristo Rey) */
 .s-stage { position: absolute; inset: 0; display: grid; place-items: center; padding-inline: 4vw; }
-.sokoly { height: 74vh; max-height: 78vmin; width: auto; max-width: 70vw;
+.bordado-img { height: 74vh; max-height: 78vmin; width: auto; max-width: 70vw;
   filter: drop-shadow(0 0 3vmin var(--brillo1, rgba(40,110,255,.45))) drop-shadow(0 0 1.2vmin var(--brillo2, rgba(230,40,60,.35)));
   animation: breathe 8s ease-in-out infinite; }

@@ -12,14 +12,13 @@ Consola para manejar la proyección de un acto escolar con el teclado: una venta
 
 ## Configuración del evento
 
-Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `eventos/` está en `.gitignore`: los archivos son de cada institución. `build.py` valida el JSON (con errores en español), embebe las imágenes y el video, y mete el JSON en `<script type="application/json" id="evento">`. En el navegador queda en `EV`, y `FONDO[tipo]` da cada fondo.
+Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `eventos/` está en `.gitignore`: los archivos son de cada institución. `build.py` valida el JSON (con errores en español), embebe las imágenes y el video, y mete el JSON en `<script type="application/json" id="evento">`. Las imágenes viajan dentro del JSON (`fondos[].src`, data URI); cada video va en su propio `<script class="vid64" data-clave>`. En el navegador queda en `EV`, y `FONDO[clave]` da cada fondo.
 
 - Campos: `id` (minúsculas y guiones; se usa en el nombre del archivo, la clave de `localStorage` y el nombre de la ventana), `titulo`, `institucion` (obligatorios), y `numero`, `unidad`, `anios`, `lema` (opcionales: si faltan, se ocultan).
-- `fondos`: lista de `{tipo, nombre, imagen | archivo, alt?}`. Tipos: `escudo`, `aniversario`, `logo`, `bordado` y `video` (con `rotulos: [{desde, hasta?, texto, sub?}]`, en segundos; sin `hasta`, el rótulo queda hasta el final).
-- `colores` (opcional, general y también por fondo): `fondo`, `acento`, `texto` en hex. Además, `escudo` acepta `fondo_abajo` y `brasas`, `logo` acepta `papel` (lista para el papel picado) y `bordado` acepta `hilos` (dos colores). `paleta(tipo)` mezcla los del fondo con los generales y pone valores por defecto. Las variantes (centro y borde de los degradés, halos, rayos) salen de `luz()` y `escala()`, que cambian la luminosidad en HSL sin cambiar el tono. Los colores de Cristo Rey están puestos tal cual en su `evento.json`, así que se ve igual que en el acto.
+- `fondos`: lista ordenada de `{tipo, nombre, imagen | archivo, alt?, rota?, colores?}`. El orden es el de la lista y la rotación. `rota: false` lo deja fuera de la rotación automática (se puede poner fijo igual). Los tipos se pueden repetir y ninguno es obligatorio. `build.py` le pone a cada uno su `clave`: el tipo, o `tipo-2`, `tipo-3`… si se repite. Tipos: `escudo`, `aniversario`, `logo`, `bordado` y `video` (con `rotulos: [{desde, hasta?, texto, sub?}]`, en segundos; sin `hasta`, el rótulo queda hasta el final).
+- `colores` (opcional, general y también por fondo): `fondo`, `acento`, `texto` en hex. Además, `escudo` acepta `fondo_abajo` y `brasas`, `logo` acepta `papel` (lista para el papel picado) y `bordado` acepta `hilos` (dos colores). `paleta(fondo)` mezcla los del fondo con los generales y pone valores por defecto. Las variantes (centro y borde de los degradés, halos, rayos) salen de `luz()` y `escala()`, que cambian la luminosidad en HSL sin cambiar el tono. Los colores de Cristo Rey están puestos tal cual en su `evento.json`, así que se ve igual que en el acto.
 - Los colores de la **consola** no cambian por evento: el rojo ("al aire") y el dorado ("siguiente") son parte de la interfaz.
-- En las escenas, los textos llevan `data-ev="campo"` y los completa `fillEv()`. `data-ev-si` oculta un bloque si el campo está vacío, y `data-tipo` toma el `aria-label` y el `alt` del fondo.
-- Por ahora las escenas son fijas: `escudo`, `logo` y `bordado` son obligatorios, va uno de cada tipo, y las claves internas siguen siendo `escudo`, `historia`, `aniversario`, `logo` y `sokoly`.
+- En las escenas, los textos llevan `data-ev="campo"` y los completa `fillEv()`. `data-ev-si` oculta un bloque si el campo está vacío.
 
 ## Arquitectura
 
@@ -48,13 +47,14 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 
 ### Escenas de la pantalla
 
-- **Fondos animados** dibujados en `<canvas>` (`src/dibujo.js`): `escudo`, `aniversario`, `logo` y `sokoly`. Su HTML está en `src/escenas.html` y su CSS en `src/pantalla.css`.
-- `historia`: video embebido en base64, con rótulos de año.
+- **Fondos del evento**: una escena por cada elemento de `fondos`, clonada del molde de su tipo (`<template id="tplFondos">`, que sale de `src/escenas.html`) e insertada antes de las ranuras de contenidos. Su CSS está en `src/pantalla.css`.
+  - Los animados se dibujan en `<canvas>` con `DIBUJOS[tipo](sección, paleta)` (`src/dibujo.js`), que devuelve `{size, draw}`. Cada escena tiene su propio lienzo y sus partículas.
+  - Los de tipo `video` se pasan una vez con sus rótulos y después vuelven al fondo anterior. En el código, `esVideo(clave)` reemplaza a la antigua clave fija `historia`.
 - `m1` / `m2`: dos ranuras que se alternan para los videos e imágenes del programa (fundido entre una y otra).
 - `u1` / `u2`: dos ranuras para los fondos agregados por el usuario.
 - `negro`.
 - Música: un `<audio>` independiente de la imagen.
-- Claves de rotación: los nombres de los fondos animados, o `u:<id>` para los agregados.
+- Claves de rotación: las `clave` de los fondos del evento, o `u:<id>` para los agregados. Si una clave no sirve, se usa `PRIMERO` (el primer fondo que no es video).
 
 ### Estado guardado
 
@@ -91,6 +91,6 @@ En `localStorage['consola-acto:<id>']`: nombre, sonido, "al terminar", repetici�
 - ~~Textos, títulos, etiquetas de los fondos, clave de `localStorage` y tiempos de los rótulos~~: ya salen de `evento.json` (paso 1).
 - ~~Colores fijos en `src/pantalla.css` y `src/dibujo.js`~~: salen de `colores` (paso 2).
 - **Imágenes y video** en `eventos/cristo-rey-70/` (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia). **Son de la institución y del grupo de danzas:** antes de publicar el repositorio, confirmar si se pueden subir. Mientras tanto quedan fuera de git; falta agregar un evento de ejemplo en `ejemplos/generico/` (paso 4).
-- **Fondos animados de diseño propio** (`escudo`, `aniversario`, `logo`, `sokoly`): para hacerlos genéricos, conviene que tomen de configuración el logo, los textos y la paleta, y que la lista `BUILTIN` y las escenas se generen a partir de esa configuración.
+- ~~Escenas, `BUILTIN` y rotación fijas~~: se generan desde `fondos` (paso 3). El tipo `bordado` (punto cruz ucraniano) sigue siendo un diseño pensado para Sokoly, aunque sus colores son configurables.
 
-Plan en curso: 1) `evento.json` + textos (hecho), 2) colores (hecho), 3) escenas y `BUILTIN` generadas desde `fondos` (con `rota: false` en lugar de la excepción de `sokoly` en `inRot`), 4) `ejemplos/generico/` como evento por defecto.
+Plan en curso: 1) `evento.json` + textos (hecho), 2) colores (hecho), 3) escenas y `BUILTIN` generadas desde `fondos` (hecho), 4) `ejemplos/generico/` como evento por defecto.

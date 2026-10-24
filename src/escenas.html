@@ -1,8 +1,9 @@
-<!-- los textos con data-ev y los aria-label / alt se completan desde evento.json -->
-<section class="scene" id="sB" data-tipo="escudo">
-  <canvas id="cB"></canvas>
+<!-- un molde por tipo de fondo: la pantalla clona uno por cada fondo de evento.json.
+     Los textos con data-ev, la imagen, el video y los rótulos se completan desde la configuración. -->
+<section class="scene" data-tipo="escudo">
+  <canvas></canvas>
   <div class="b-stage">
-    <img class="crest" id="crest" src="__ESCUDO__" alt="">
+    <img class="escudo-img" alt="">
     <div class="b-copy txt">
       <div class="big" data-ev-si="numero"><span class="num" data-ev="numero"></span><span class="anos" data-ev="unidad"></span></div>
       <div class="rule"></div>
@@ -12,14 +13,13 @@
   </div>
 </section>
 
-<section class="scene" id="sV" data-tipo="video">
-  <video id="vid" muted playsinline preload="auto"></video>
+<section class="scene s-video" data-tipo="video">
+  <video muted playsinline preload="auto"></video>
   <div class="vignette"></div>
-  <!-- rótulos del video: se agregan desde fondos[].rotulos -->
 </section>
 
-<section class="scene" id="sA" data-tipo="aniversario">
-  <canvas id="cA"></canvas>
+<section class="scene" data-tipo="aniversario">
+  <canvas></canvas>
   <div class="a-stage">
     <div class="a-emblem txt">
       <p class="inst" data-ev="institucion"></p>
@@ -30,16 +30,16 @@
   </div>
 </section>
 
-<section class="scene" id="sL" data-tipo="logo">
-  <canvas id="cL"></canvas>
+<section class="scene" data-tipo="logo">
+  <canvas></canvas>
   <div class="l-stage">
-    <img class="logo70" id="logo70" src="__LOGO__" alt="">
+    <img class="logo-img" alt="">
   </div>
 </section>
 
-<section class="scene" id="sS" data-tipo="bordado">
-  <canvas id="cS"></canvas>
+<section class="scene" data-tipo="bordado">
+  <canvas></canvas>
   <div class="s-stage">
-    <img class="sokoly" id="sokoly" src="__BORDADO__" alt="">
+    <img class="bordado-img" alt="">
   </div>
 </section>

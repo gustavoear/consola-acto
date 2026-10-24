@@ -19,9 +19,9 @@ ROOT = pathlib.Path(__file__).resolve().parent
 SRC, DIST = ROOT / 'src', ROOT / 'dist'
 POR_DEFECTO = ROOT / 'eventos' / 'cristo-rey-70'
 
-# tipo de fondo  ->  marcador de su imagen en src/escenas.html
-IMAGENES = {'escudo': '__ESCUDO__', 'logo': '__LOGO__', 'bordado': '__BORDADO__'}
-TIPOS = set(IMAGENES) | {'aniversario', 'video'}
+# tipos de fondo (un molde por tipo en src/escenas.html); los de IMAGENES llevan "imagen"
+IMAGENES = {'escudo', 'logo', 'bordado'}
+TIPOS = IMAGENES | {'aniversario', 'video'}
 MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
         '.svg': 'image/svg+xml', '.gif': 'image/gif', '.avif': 'image/avif',
         '.mp4': 'video/mp4', '.webm': 'video/webm', '.m4v': 'video/mp4'}
@@ -41,14 +41,15 @@ def b64(path: pathlib.Path) -> str:
     return base64.b64encode(path.read_bytes()).decode()
 
 
-def archivo(carpeta: pathlib.Path, nombre, donde: str) -> pathlib.Path:
+def archivo(carpeta: pathlib.Path, nombre, donde: str, clase: str) -> pathlib.Path:
     if not isinstance(nombre, str) or not nombre:
         raise ErrorEvento(f'{donde}: falta el nombre del archivo')
     f = carpeta / nombre
     if not f.is_file():
         raise ErrorEvento(f'{donde}: no encuentro {f.relative_to(ROOT) if f.is_relative_to(ROOT) else f}')
-    if f.suffix.lower() not in MIME:
-        raise ErrorEvento(f'{donde}: no conozco el formato de {nombre}')
+    if not MIME.get(f.suffix.lower(), '').startswith(clase + '/'):
+        raise ErrorEvento(f'{donde}: {nombre} no es {"una imagen" if clase == "image" else "un video"} que conozca'
+                          f' ({", ".join(sorted(k for k, v in MIME.items() if v.startswith(clase + "/")))})')
     return f
 
 
@@ -90,27 +91,26 @@ def leer_evento(carpeta: pathlib.Path) -> dict:
     fondos = ev.get('fondos')
     if not isinstance(fondos, list) or not fondos:
         raise ErrorEvento(f'Falta la lista "fondos" en {j.name}')
-    vistos = set()
+    cuenta = {}
     for i, f in enumerate(fondos, 1):
         donde = f'fondos[{i}]'
         if not isinstance(f, dict) or f.get('tipo') not in TIPOS:
             raise ErrorEvento(f'{donde}: "tipo" tiene que ser uno de {", ".join(sorted(TIPOS))}')
-        if f['tipo'] in vistos:
-            raise ErrorEvento(f'{donde}: el tipo "{f["tipo"]}" está repetido (por ahora va uno de cada uno)')
-        vistos.add(f['tipo'])
+        # clave del fondo: su tipo, o tipo-2, tipo-3… si se repite
+        cuenta[f['tipo']] = cuenta.get(f['tipo'], 0) + 1
+        f['clave'] = f['tipo'] if cuenta[f['tipo']] == 1 else f'{f["tipo"]}-{cuenta[f["tipo"]]}'
         if not isinstance(f.get('nombre'), str) or not f['nombre'].strip():
             raise ErrorEvento(f'{donde}: falta "nombre"')
+        if not isinstance(f.get('rota', True), bool):
+            raise ErrorEvento(f'{donde}: "rota" tiene que ser true o false')
         colores(f.get('colores'), COLORES | COLORES_TIPO.get(f['tipo'], set()), donde)
         if f['tipo'] in IMAGENES:
-            archivo(carpeta, f.get('imagen'), donde)
+            archivo(carpeta, f.get('imagen'), donde, 'image')
         if f['tipo'] == 'video':
-            archivo(carpeta, f.get('archivo'), donde)
+            archivo(carpeta, f.get('archivo'), donde, 'video')
             for r in f.setdefault('rotulos', []):
                 if not isinstance(r, dict) or not isinstance(r.get('desde'), (int, float)) or not isinstance(r.get('texto'), str):
                     raise ErrorEvento(f'{donde}: cada rótulo necesita "desde" (segundos) y "texto"')
-    falta = set(IMAGENES) - vistos
-    if falta:  # las escenas todavía son fijas: hasta que se generen desde la configuración, van todas
-        raise ErrorEvento(f'Por ahora tienen que estar los fondos de tipo: {", ".join(sorted(falta))}')
     return ev
 
 
@@ -128,16 +128,17 @@ def main() -> int:
     s = s.replace('/*DIBUJO*/', (SRC / 'dibujo.js').read_text(encoding='utf-8'))
     s = s.replace('__TITULO__', html.escape('Consola · ' + ev['titulo']))
 
-    fondos = {f['tipo']: f for f in ev['fondos']}
-    for tipo, marca in IMAGENES.items():
-        f = carpeta / fondos[tipo]['imagen']
-        s = s.replace(marca, f'data:{MIME[f.suffix.lower()]};base64,{b64(f)}')
-
-    datos = ''
-    if 'video' in fondos:
-        v = carpeta / fondos['video']['archivo']
-        datos = f'<script type="text/plain" id="vid64" data-mime="{MIME[v.suffix.lower()]}">{b64(v)}</script>'
-    s = s.replace('__VIDEO_DATA__', datos)
+    # las imágenes viajan dentro de la configuración; los videos, aparte, en un <script> cada uno
+    videos = []
+    for f in ev['fondos']:
+        if f['tipo'] in IMAGENES:
+            img = carpeta / f['imagen']
+            f['src'] = f'data:{MIME[img.suffix.lower()]};base64,{b64(img)}'
+        if f['tipo'] == 'video':
+            v = carpeta / f['archivo']
+            videos.append(f'<script type="text/plain" class="vid64" data-clave="{f["clave"]}" '
+                          f'data-mime="{MIME[v.suffix.lower()]}">{b64(v)}</script>')
+    s = s.replace('__VIDEO_DATA__', '\n'.join(videos))
     # "</" escapado para que un texto del evento no pueda cerrar el <script>
     s = s.replace('__EVENTO__', json.dumps(ev, ensure_ascii=False).replace('</', '<\\/'))
 

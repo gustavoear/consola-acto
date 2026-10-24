@@ -166,7 +166,6 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 </style>
 
 <template id="tplPantalla">
-<!--ESCENAS-->
 <section class="scene media" id="sM1"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline preload="auto"></video></section>
 <section class="scene media" id="sM2"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline preload="auto"></video></section>
 <section class="scene media bgm" id="sU1"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline muted loop preload="auto"></video></section>
@@ -174,6 +173,10 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 <section class="scene" id="sN" aria-label="Negro"></section>
 <audio id="mus" preload="auto"></audio>
 <div class="arranque" id="arranque"><div><strong>Pantalla del proyector</strong><span id="arrTxt">Hacé clic acá una vez para activar el sonido y la pantalla completa.</span><small>Si esta ventana no está en el proyector, movela con Super + Shift + flecha izquierda o derecha.</small></div></div>
+</template>
+
+<template id="tplFondos">
+<!--ESCENAS-->
 </template>
 
 <template id="tplConsola">
@@ -270,7 +273,9 @@ __VIDEO_DATA__
   const $ = id => document.getElementById(id);
   // configuración del evento (evento.json), embebida por build.py
   const EV = JSON.parse($('evento').textContent);
-  const FONDO = Object.fromEntries(EV.fondos.map(f => [f.tipo, f]));
+  // cada fondo tiene una clave (la pone build.py): su tipo, o tipo-2, tipo-3… si el tipo se repite
+  const FONDO = Object.fromEntries(EV.fondos.map(f => [f.clave, f]));
+  const esVideo = k => !!FONDO[k] && FONDO[k].tipo === 'video';
 
   // ----- colores del evento -----
   // las variantes de cada color (más claro, más oscuro) se calculan en HSL, conservando el tono
@@ -291,19 +296,14 @@ __VIDEO_DATA__
   const rgb = c => hexRgb(c).join(',');
   const COL = Object.assign({ fondo: '#13254f', acento: '#e2b85c', texto: '#f4ecd9' }, EV.colores);
   // colores de un fondo: los suyos (fondos[].colores) sobre los generales del evento
-  function paleta(tipo) {
-    const c = Object.assign({}, COL, (FONDO[tipo] || {}).colores);
+  function paleta(f) {
+    const c = Object.assign({}, COL, f.colores);
     return Object.assign({ fondo_abajo: c.fondo, brasas: '#f08a2c', papel: [c.acento, luz(c.acento, .88), c.texto, luz(c.fondo, .55)], hilos: [c.acento, c.texto] }, c);
   }
   // completa los textos marcados con data-ev; los que quedan vacíos se ocultan
   function fillEv(root) {
     for (const el of root.querySelectorAll('[data-ev]')) { el.textContent = EV[el.dataset.ev] || ''; el.hidden = !EV[el.dataset.ev]; }
     for (const el of root.querySelectorAll('[data-ev-si]')) el.hidden = !EV[el.dataset.evSi];
-    for (const el of root.querySelectorAll('[data-tipo]')) {
-      const f = FONDO[el.dataset.tipo]; if (!f) continue;
-      el.setAttribute('aria-label', f.nombre);
-      const im = el.querySelector('img'); if (im) im.alt = f.alt || f.nombre;
-    }
   }
   const MODO_PANTALLA = location.hash === '#pantalla';
   if (MODO_PANTALLA) pantalla(); else consola();
@@ -315,51 +315,59 @@ __VIDEO_DATA__
     document.body.className = 'pantalla';
     document.title = 'Proyector · ' + EV.titulo;
     document.body.appendChild($('tplPantalla').content.cloneNode(true));
-    fillEv(document.body);
     const css = (el, k, v) => el.style.setProperty(k, v);
     css(document.documentElement, '--gold', COL.acento);
     css(document.documentElement, '--gold-hi', luz(COL.acento, .88));
     css(document.documentElement, '--gold-lo', luz(COL.acento, .38));
     css(document.documentElement, '--text', COL.texto);
     css(document.documentElement, '--ink', escala(COL.fondo, .45));
-    css($('sB'), '--brasas', paleta('escudo').brasas);
-    css($('sL'), '--sombra', `rgba(${rgb(escala(paleta('logo').fondo, .8))},.35)`);
-    css($('sS'), '--brillo1', `rgba(${rgb(luz(paleta('bordado').fondo, .58, 1))},.45)`);
-    css($('sS'), '--brillo2', `rgba(${rgb(paleta('bordado').hilos[0])},.35)`);
     const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3 };
-    // rotación: claves de fondos propios (escudo, logo…) o 'u:<id>' para imágenes y videos agregados
-    let rot = ['escudo', 'historia', 'aniversario', 'logo'], bgKinds = {}, curKey = null, uSlot = 'u2';
+    // rotación: claves de los fondos del evento o 'u:<id>' para imágenes y videos agregados.
+    // Arranca con los de evento.json que no tienen "rota": false; después manda la consola.
+    let rot = EV.fondos.filter(f => f.rota !== false).map(f => f.clave), bgKinds = {}, curKey = null, uSlot = 'u2';
+    // fondo de respaldo: el primero que no es video
+    const PRIMERO = (EV.fondos.find(f => f.tipo !== 'video') || EV.fondos[0]).clave;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const vid = $('vid'), mus = $('mus');
-    // rótulos del video: se muestran entre "desde" y "hasta"; sin "hasta", quedan hasta el final
-    const rotulos = ((FONDO.video || {}).rotulos || []).map(r => {
-      const el = document.createElement('div'); el.className = 'yr txt'; el.textContent = r.texto;
-      if (r.sub) { const sm = document.createElement('small'); sm.textContent = r.sub; el.appendChild(sm); }
-      $('sV').appendChild(el);
-      return { el, desde: r.desde, hasta: r.hasta };
-    });
-    const emb = $('vid64');
-    if (emb) {
-      const bin = atob(emb.textContent.trim()), buf = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      vid.src = URL.createObjectURL(new Blob([buf], { type: emb.dataset.mime || 'video/mp4' }));
-      emb.remove();
-    }
+    const mus = $('mus');
 
 /*DIBUJO*/
 
     // ----- escenas -----
+    // una por cada fondo de evento.json, clonada del molde de su tipo, debajo de las ranuras de contenidos
+    const scenes = {};
+    for (const f of EV.fondos) {
+      const sec = $('tplFondos').content.querySelector(`[data-tipo="${f.tipo}"]`).cloneNode(true);
+      sec.setAttribute('aria-label', f.nombre); sec.dataset.clave = f.clave;
+      fillEv(sec);
+      const img = sec.querySelector('img'); if (img) { img.src = f.src; img.alt = f.alt || f.nombre; }
+      $('sM1').before(sec);
+      const s = scenes[f.clave] = { el: sec, until: 0 };
+      if (f.tipo !== 'video') { Object.assign(s, DIBUJOS[f.tipo](sec, paleta(f))); continue; }
+      s.video = sec.querySelector('video');
+      // rótulos: se muestran entre "desde" y "hasta"; sin "hasta", quedan hasta el final
+      s.rotulos = (f.rotulos || []).map(r => {
+        const el = document.createElement('div'); el.className = 'yr txt'; el.textContent = r.texto;
+        if (r.sub) { const sm = document.createElement('small'); sm.textContent = r.sub; el.appendChild(sm); }
+        sec.appendChild(el);
+        return { el, desde: r.desde, hasta: r.hasta };
+      });
+      const emb = document.querySelector(`script.vid64[data-clave="${f.clave}"]`);
+      if (emb) {
+        const bin = atob(emb.textContent.trim()), buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        s.video.src = URL.createObjectURL(new Blob([buf], { type: emb.dataset.mime || 'video/mp4' }));
+        emb.remove();
+      }
+      s.video.addEventListener('ended', () => videoTerminado(f.clave));
+    }
+    function size() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      for (const s of Object.values(scenes)) if (s.size) s.size();
+    }
+    addEventListener('resize', size); size();
     const slot = id => { const el = $(id); return { el, blur: el.querySelector('img.blur'), img: el.querySelector('img.main'), v: el.querySelector('video') }; };
     const M = { m1: slot('sM1'), m2: slot('sM2') }, U = { u1: slot('sU1'), u2: slot('sU2') };
-    const scenes = {
-      escudo: { el: $('sB'), draw: drawB, until: 0 },
-      aniversario: { el: $('sA'), draw: drawA, until: 0 },
-      logo: { el: $('sL'), draw: drawL, until: 0 },
-      sokoly: { el: $('sS'), draw: drawS, until: 0 },
-      historia: { el: $('sV') },
-      m1: { el: M.m1.el }, m2: { el: M.m2.el }, u1: { el: U.u1.el }, u2: { el: U.u2.el },
-      negro: { el: $('sN') }
-    };
+    Object.assign(scenes, { m1: { el: M.m1.el }, m2: { el: M.m2.el }, u1: { el: U.u1.el }, u2: { el: U.u2.el }, negro: { el: $('sN') } });
     const files = new Map();       // id -> { file, url }
     let current = null, mode = 'fondos', rotar = true, idx = 0, timer = null, returnTo = null, hEnded = false;
     let activeSlot = 'm2', cue = null, vol = 1;
@@ -386,17 +394,17 @@ __VIDEO_DATA__
       for (const [k, s] of Object.entries(scenes)) s.el.classList.toggle('on', k === name);
       // apagar lo que sale
       if (prev && prev !== name) {
-        if (prev === 'historia') vid.pause();
+        if (esVideo(prev)) scenes[prev].video.pause();
         if (M[prev]) { const v = M[prev].v; if (!v.paused) ramp(v, 0, FADE_MS * .8, () => v.pause()); }
         if (U[prev]) { const v = U[prev].v; setTimeout(() => { if (current !== prev) v.pause(); }, CONFIG.fadeSeg * 1000 + 200); }
       }
-      if (name === 'historia') playHistoria();
+      if (esVideo(name)) playVideo(name);
       schedule();
     }
     let nextAt = 0, startedAt = 0;
     function schedule(ms) {
       clearTimeout(timer); nextAt = 0;
-      if (mode === 'fondos' && rotar && current !== 'historia') {
+      if (mode === 'fondos' && rotar && !esVideo(current)) {
         if (ms === undefined) { ms = CONFIG.fondoSeg * 1000; startedAt = performance.now(); }
         nextAt = performance.now() + ms; timer = setTimeout(nextFondo, ms);
       }
@@ -407,9 +415,9 @@ __VIDEO_DATA__
       // si cambia la duración con un fondo en pantalla, se respeta lo que ya lleva mostrado
       if (nextAt) schedule(Math.max(1000, startedAt + CONFIG.fondoSeg * 1000 - performance.now()));
     }
-    const okKey = k => k && (!k.startsWith('u:') || (bgKinds[k.slice(2)] && files.has(k.slice(2))));
+    const okKey = k => !!k && (k.startsWith('u:') ? !!(bgKinds[k.slice(2)] && files.has(k.slice(2))) : !!FONDO[k]);
     function showBg(key) {
-      if (!okKey(key)) key = 'escudo';
+      if (!okKey(key)) key = PRIMERO;
       curKey = key;
       if (!key.startsWith('u:')) return show(key);
       const id = key.slice(2), url = urlFor(id), name = uSlot === 'u1' ? 'u2' : 'u1', s = U[name];
@@ -429,9 +437,9 @@ __VIDEO_DATA__
       show(name);
     }
     function nextFondo() {
-      if (curKey === 'historia' && returnTo) { const r = returnTo; returnTo = null; return showBg(r); }
+      if (esVideo(curKey) && returnTo) { const r = returnTo; returnTo = null; return showBg(r); }
       const list = rot.filter(okKey);
-      if (!list.length || (list.length === 1 && list[0] === curKey && curKey !== 'historia')) return schedule();
+      if (!list.length || (list.length === 1 && list[0] === curKey && !esVideo(curKey))) return schedule();
       idx = (list.indexOf(curKey) + 1) % list.length;
       showBg(list[idx]);
     }
@@ -439,39 +447,42 @@ __VIDEO_DATA__
       mode = 'fondos'; cue = null;
       if (typeof rotFlag === 'boolean') rotar = rotFlag;
       const list = rot.filter(okKey);
-      if (which === 'historia') {
-        returnTo = (curKey && curKey !== 'historia' && okKey(curKey)) ? curKey : (list.find(k => k !== 'historia') || 'escudo');
-        curKey = 'historia'; show('historia'); return;
+      // un video fijo se pasa una vez y después se vuelve al fondo que estaba
+      if (esVideo(which)) {
+        returnTo = (curKey && !esVideo(curKey) && okKey(curKey)) ? curKey : (list.find(k => !esVideo(k)) || PRIMERO);
+        curKey = which; show(which); return;
       }
       returnTo = null;
       if (which) return showBg(which);
-      if (!list.length) return showBg('escudo');
+      if (!list.length) return showBg(PRIMERO);
       // al volver a la rotación se sigue desde el último fondo mostrado
       let n = list.includes(curKey) ? curKey : list[0];
-      if (n === 'historia' && list.length > 1) n = list[(list.indexOf(n) + 1) % list.length];
+      if (esVideo(n) && list.length > 1) n = list[(list.indexOf(n) + 1) % list.length];
       showBg(n);
     }
     function setBgList(d) {
       rot = Array.isArray(d.rot) ? d.rot : rot; bgKinds = d.kinds || {};
       // si se quitó el fondo agregado que estaba al aire, pasar al siguiente
       if (mode === 'fondos' && curKey && curKey.startsWith('u:') && !okKey(curKey)) { curKey = null; fondos(null, true); }
-      else if (mode === 'fondos' && rotar && !nextAt && current !== 'historia') schedule();
+      else if (mode === 'fondos' && rotar && !nextAt && !esVideo(current)) schedule();
     }
-    function playHistoria() {
+    function playVideo(k) {
+      const { video: vid, rotulos } = scenes[k];
       hEnded = false; for (const r of rotulos) r.el.classList.remove('show');
       vid.classList.remove('zoom'); void vid.offsetWidth; if (!reduce) vid.classList.add('zoom');
       vid.muted = true;
       try { vid.currentTime = 0; } catch (e) {}
       vid.play().catch(() => {});
     }
-    vid.addEventListener('ended', () => {
+    function videoTerminado(k) {
+      if (current !== k) return;
       hEnded = true;
       if (mode !== 'fondos') return;
       timer = setTimeout(() => {
         if (returnTo && !rotar) { const r = returnTo; returnTo = null; showBg(r); }
         else nextFondo();
       }, CONFIG.pausaFinalSeg * 1000);
-    });
+    }
     function negro() { mode = 'negro'; cue = null; show('negro', 1.2); }
 
     function lanzar(c) {
@@ -596,8 +607,8 @@ __VIDEO_DATA__
       t++;
       const now = performance.now();
       for (const [k, s] of Object.entries(scenes)) if (s.draw && (k === current || now < s.until)) s.draw(t);
-      if (current === 'historia') {
-        const ct = vid.currentTime;
+      if (esVideo(current)) {
+        const { video, rotulos } = scenes[current], ct = video.currentTime;
         for (const r of rotulos) r.el.classList.toggle('show', r.hasta == null ? ct > r.desde || hEnded : !hEnded && ct > r.desde && ct < r.hasta);
       }
       requestAnimationFrame(frame);
@@ -613,7 +624,7 @@ __VIDEO_DATA__
     document.body.className = 'consola';
     document.body.appendChild($('tplConsola').content.cloneNode(true));
     fillEv(document.body);
-    const emb = $('vid64'); if (emb) emb.remove();
+    for (const emb of document.querySelectorAll('script.vid64')) emb.remove();
     const KEY = 'consola-acto:' + EV.id;
     const VIDEO_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)$/i, IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)$/i, AUD_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i;
     let items = [], sel = 0, win = null, est = null, lastEst = 0, vol = 1;
@@ -705,28 +716,27 @@ __VIDEO_DATA__
 
     // ----- fondos: los animados propios y las imágenes o videos agregados -----
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-    const tplP = $('tplPantalla').content;
-    const BUILTIN = [
-      { key: 'escudo', tipo: 'escudo', src: '#crest', bgc: paleta('escudo').fondo },
-      { key: 'historia', tipo: 'video', txt: ((FONDO.video || {}).rotulos || [{}])[0].texto || '▶', bgc: luz(COL.acento, .22, .3) },
-      { key: 'aniversario', tipo: 'aniversario', txt: EV.numero || '★', bgc: paleta('aniversario').fondo },
-      { key: 'logo', tipo: 'logo', src: '#logo70', bgc: luz(paleta('logo').fondo, .97) },
-      { key: 'sokoly', tipo: 'bordado', src: '#sokoly', bgc: paleta('bordado').fondo }
-    ].filter(b => FONDO[b.tipo]).map(b => ({ ...b, label: FONDO[b.tipo].nombre, builtin: true }));
+    // los fondos de evento.json; la miniatura muestra su imagen o un texto sobre el color de fondo
+    const BUILTIN = EV.fondos.map(f => {
+      const P = paleta(f), b = { key: f.clave, tipo: f.tipo, label: f.nombre, src: f.src, builtin: true, rota: f.rota !== false };
+      if (f.tipo === 'video') return { ...b, txt: ((f.rotulos || [])[0] || {}).texto || '▶', bgc: luz(P.acento, .22, .3) };
+      if (f.tipo === 'aniversario') return { ...b, txt: EV.numero || '★', bgc: P.fondo };
+      return { ...b, bgc: f.tipo === 'logo' ? luz(P.fondo, .97) : P.fondo };
+    });
     // miniaturas chicas de los logos, para no repetir imágenes pesadas en la lista
     for (const b of BUILTIN) if (b.src) {
-      const el = tplP.querySelector(b.src), im = new Image();
+      const im = new Image();
       im.onload = () => {
         const c = document.createElement('canvas'); c.width = 104; c.height = 58; const x = c.getContext('2d');
         x.fillStyle = b.bgc; x.fillRect(0, 0, 104, 58);
         const r = Math.min(96 / im.width, 52 / im.height); x.drawImage(im, (104 - im.width * r) / 2, (58 - im.height * r) / 2, im.width * r, im.height * r);
         b.thumb = c.toDataURL('image/jpeg', .8); renderBg();
       };
-      if (el) im.src = el.getAttribute('src');
+      im.src = b.src;
     }
     saved.bg = Object.assign({ order: [], rot: {} }, saved.bg || {});
     let bgUser = [];
-    const inRot = k => (k in saved.bg.rot) ? saved.bg.rot[k] : k !== 'sokoly';
+    const inRot = k => (k in saved.bg.rot) ? saved.bg.rot[k] : !FONDO[k] || FONDO[k].rota !== false;
     function bgEntries() {
       const all = BUILTIN.concat(bgUser), pos = k => { const i = saved.bg.order.indexOf(k); return i < 0 ? 1e6 : i; };
       return all.map((e, i) => [e, i]).sort((a, b) => (pos(a[0].key) - pos(b[0].key)) || (a[1] - b[1])).map(x => x[0]);
@@ -771,7 +781,7 @@ __VIDEO_DATA__
       const list = bgEntries();
       bgListEl.innerHTML = list.map((e, i) => {
         const on = inRot(e.key), isLive = live === e.key;
-        const kindTxt = e.builtin ? 'Animado' : e.err ? 'No se puede leer' : e.kind === 'video' ? 'Video' + (e.dur ? ' · ' + fmt(e.dur) : '') : 'Imagen';
+        const kindTxt = e.builtin ? (e.tipo === 'video' ? 'Video' : 'Animado') : e.err ? 'No se puede leer' : e.kind === 'video' ? 'Video' + (e.dur ? ' · ' + fmt(e.dur) : '') : 'Imagen';
         return `<div class="bgrow${isLive ? ' live' : ''}${on ? '' : ' out'}" data-key="${esc(e.key)}">
           <span class="bgthumb" data-act="show" title="Dejar fijo" style="background-color:${e.bgc};${e.thumb ? `background-image:url('${e.thumb}')` : ''}">${e.thumb ? '' : e.txt || (e.kind === 'video' ? '▶' : '')}</span>
           <span class="bgname" data-act="show" title="Dejar fijo"><b>${esc(e.label)}</b><small>${isLive ? '<span class="tag live">AL AIRE</span> ' : ''}${kindTxt}${on ? '' : ' · no rota'}</small></span>
@@ -977,7 +987,7 @@ __VIDEO_DATA__
       $('musLeft').textContent = m && m.dur ? '−' + fmt(m.dur - m.t) : '—';
       for (const b of document.querySelectorAll('[data-bg]')) {
         const k = b.dataset.bg;
-        b.classList.toggle('on', est.mode === 'fondos' ? (k === 'rotar' ? est.rotar : (!est.rotar && k === est.current) || (k === est.current && k === 'historia')) : est.mode === 'negro' && k === 'negro');
+        b.classList.toggle('on', est.mode === 'fondos' ? (k === 'rotar' ? est.rotar : (!est.rotar && k === est.current) || (k === est.current && esVideo(k))) : est.mode === 'negro' && k === 'negro');
       }
       if ((est.mode === 'fondos' ? est.current : null) !== bgLive) renderBg();
       const liveKey = (est.mode === 'media' ? est.cueId : '') + '|' + (m ? m.id : '');
@@ -1002,7 +1012,7 @@ __VIDEO_DATA__
     function fondos(which) {
       if (which === 'negro') return send({ type: 'cmd', cmd: 'negro' }) && toast('Negro');
       if (which === 'rotar' || !which) return send({ type: 'cmd', cmd: 'fondos', which: null, rotar: true }) && toast('Fondos animados');
-      if (which === 'historia') return send({ type: 'cmd', cmd: 'fondos', which }) && toast(bgLabel(which));
+      if (esVideo(which)) return send({ type: 'cmd', cmd: 'fondos', which }) && toast(bgLabel(which));
       send({ type: 'cmd', cmd: 'fondos', which, rotar: false }) && toast('Fondo fijo: ' + bgLabel(which));
     }
     for (const b of document.querySelectorAll('[data-bg]')) b.addEventListener('click', () => fondos(b.dataset.bg));
@@ -1078,7 +1088,7 @@ __VIDEO_DATA__
       if (!alive() || !est) { n.textContent = 'Se aplica al conectar la pantalla del proyector.'; return; }
       if (est.mode !== 'fondos') n.textContent = 'Los fondos no están al aire.';
       else if (!est.rotar) n.textContent = 'Fondo fijo: no cambia solo.';
-      else if (est.current === 'historia') n.textContent = 'Pasando: ' + bgLabel('historia') + '.';
+      else if (esVideo(est.current)) n.textContent = 'Pasando: ' + bgLabel(est.current) + '.';
       else if (est.nextIn != null) n.innerHTML = 'Próximo cambio en <b>' + fmt(est.nextIn) + '</b>';
       else n.textContent = '—';
     }
