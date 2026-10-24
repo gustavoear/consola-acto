@@ -1,0 +1,14 @@
+# archivo compilado: se genera con build.py
+dist/
+
+# archivos de ejemplo que genera la prueba
+tests/media/
+
+# imágenes y video de la institución: no se publican hasta confirmar el permiso
+assets/
+
+# entorno virtual de Python (Playwright)
+.venv/
+
+__pycache__/
+.DS_Store

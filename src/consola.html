@@ -1,0 +1,1036 @@
+<title>Consola del Acto 70 Años</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
+<style>
+/*CSS_PANTALLA*/
+
+/* ===== Pantalla del proyector: capas de contenido ===== */
+body.pantalla { overflow: hidden; background: #000; }
+[hidden] { display: none !important; }
+.media { background: #000; overflow: hidden; }
+.media .blur { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover; filter: blur(40px) brightness(.45) saturate(1.1); }
+.media .main { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* llenar pantalla: ocupa todo y recorta lo que sobra (por ejemplo, un video 16:9 en un proyector 4:3) */
+.media.cover .main { object-fit: cover; }
+.media.cover .blur { display: none; }
+/* fondos agregados: las imágenes se acercan muy despacio para que no se vean quietas */
+.bgm.on img.kb { animation: kbBg 40s ease-in-out infinite alternate; }
+@keyframes kbBg { from { transform: scale(1); } to { transform: scale(1.07); } }
+@media (prefers-reduced-motion: reduce) { .bgm.on img.kb { animation: none; } }
+#sN { background: #000; }
+.arranque { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; padding-inline: 6vw;
+  background: rgba(4,8,18,.82); color: var(--text); font: 500 clamp(16px, 2.6vmin, 30px)/1.5 system-ui, sans-serif; z-index: 10; cursor: pointer; }
+.arranque strong { display: block; font-family: var(--display); color: var(--gold); font-size: 1.6em; letter-spacing: .08em; margin-bottom: .6em; }
+.arranque small { display: block; opacity: .7; margin-top: 1em; font-size: .7em; }
+body.listo .arranque { display: none; }
+
+/* ===== Consola ===== */
+/* Layout: barra superior; columna principal con "al aire", "siguiente" y el programa; columna lateral con fondos, música, volumen y atajos */
+body.consola {
+  --c-bg: #0b0f17;       /* fondo azul muy oscuro, para sala a oscuras */
+  --c-panel: #131a27;    /* paneles */
+  --c-raise: #1a2334;    /* filas y botones */
+  --c-line: #26314a;     /* bordes */
+  --c-text: #e7ebf2;     /* texto */
+  --c-mute: #8d98ad;     /* texto secundario */
+  --c-gold: #e2b85c;     /* acento de marca, "siguiente" */
+  --c-air: #ef4d56;      /* al aire */
+  --c-ok: #3fb06a;       /* conectado */
+  --c-warn: #f0a43a;     /* atención */
+  --ui: system-ui, "Cantarell", "Noto Sans", "Segoe UI", sans-serif;
+  overflow: auto; height: auto; min-height: 100%; background: var(--c-bg); color: var(--c-text);
+  font: 14px/1.45 var(--ui); padding-inline: 16px; padding-block: 12px 24px; box-sizing: border-box;
+}
+body.consola [hidden] { display: none !important; }
+body.consola *, body.consola *::before, body.consola *::after { box-sizing: border-box; }
+.c-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 4px 12px; border-bottom: 1px solid var(--c-line); }
+.c-brand { font-family: var(--display); font-weight: 700; letter-spacing: .06em; font-size: 18px; color: var(--c-gold); margin: 0; margin-right: auto; }
+.c-brand span { color: var(--c-mute); font-family: var(--ui); font-weight: 500; letter-spacing: 0; font-size: 13px; margin-left: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--c-raise);
+  border: 1px solid var(--c-line); font-weight: 600; font-size: 13px; }
+.pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c-mute); }
+.pill.ok::before { background: var(--c-ok); box-shadow: 0 0 8px var(--c-ok); }
+.pill.warn { border-color: var(--c-warn); color: var(--c-warn); }
+.pill.warn::before { background: var(--c-warn); }
+.btn { font: 600 13px/1 var(--ui); color: var(--c-text); background: var(--c-raise); border: 1px solid var(--c-line);
+  border-radius: 8px; padding: 9px 12px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: #3a4a6a; background: #202b40; }
+.btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+.btn:focus-visible, .c-row:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+.btn.prim { background: var(--c-gold); color: #1a1406; border-color: var(--c-gold); }
+.btn.prim:hover { background: #ecc779; }
+.btn.on { border-color: var(--c-gold); color: var(--c-gold); }
+.btn.air { border-color: var(--c-air); color: #fff; background: rgba(239,77,86,.18); }
+.c-grid { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; margin-top: 14px; align-items: start; }
+@media (max-width: 980px) { .c-grid { grid-template-columns: minmax(0, 1fr); } }
+.c-col { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 12px; padding: 14px; min-width: 0; }
+.panel h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--c-mute); font-weight: 700; }
+.c-now { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 720px) { .c-now { grid-template-columns: minmax(0, 1fr); } }
+.onair { border-color: rgba(239,77,86,.55); }
+.onair h2 { color: var(--c-air); }
+.big-name { font-size: 20px; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
+.sub { color: var(--c-mute); font-size: 13px; margin: 2px 0 0; }
+.bar { height: 8px; background: var(--c-raise); border-radius: 99px; overflow: hidden; margin-top: 12px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--c-air); border-radius: 99px; transition: width .25s linear; }
+/* barra para desplazarse: zona de clic alta, barra fina que crece al pasar el mouse */
+.seek { position: relative; margin-top: 6px; padding-block: 8px; cursor: default; touch-action: none; user-select: none; }
+.seek .bar { margin-top: 0; overflow: visible; position: relative; transition: height .15s; }
+.seek .bar i { position: relative; }
+.seek.can { cursor: pointer; }
+.seek.can:hover .bar, .seek.drag .bar { height: 12px; }
+.seek.can .bar i::after { content: ""; position: absolute; right: -8px; top: 50%; width: 16px; height: 16px; margin-top: -8px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); opacity: 0; transition: opacity .15s; }
+.seek.can:hover .bar i::after, .seek.drag .bar i::after { opacity: 1; }
+.seek.drag .bar i { transition: none; }
+.seek .tip { position: absolute; bottom: 100%; transform: translateX(-50%); background: #000; color: #fff; font: 700 12px/1 var(--ui);
+  font-variant-numeric: tabular-nums; padding: 5px 7px; border-radius: 6px; pointer-events: none; opacity: 0; white-space: nowrap; }
+.seek.can:hover .tip, .seek.drag .tip { opacity: 1; }
+.times { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; margin-top: 6px; font-size: 13px; color: var(--c-mute); }
+.times b { color: var(--c-text); font-size: 22px; font-weight: 700; }
+.nextp { border-color: rgba(226,184,92,.5); }
+.nextp h2 { color: var(--c-gold); }
+.kbd { display: inline-block; min-width: 24px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--c-line);
+  border-bottom-width: 3px; background: var(--c-raise); font: 700 12px/1.4 var(--ui); text-align: center; color: var(--c-text); }
+.load { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.load label.btn input { display: none; }
+.drop { border: 2px dashed var(--c-line); border-radius: 12px; padding: 22px 16px; text-align: center; color: var(--c-mute); margin-top: 10px; }
+.drop.over { border-color: var(--c-gold); color: var(--c-gold); }
+.list { display: grid; gap: 6px; margin-top: 10px; }
+.c-row { display: grid; grid-template-columns: 34px 72px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  background: var(--c-raise); border: 1px solid var(--c-line); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+.c-row.sel { border-color: var(--c-gold); background: #262a2a; box-shadow: inset 0 0 0 1px var(--c-gold); }
+.c-row.live { border-color: var(--c-air); background: #2a1a20; }
+.c-row .n { color: var(--c-mute); font-variant-numeric: tabular-nums; text-align: center; font-weight: 600; }
+@media (max-width: 640px) { .c-row { grid-template-columns: 34px 56px minmax(0, 1fr); } .c-row .acts { grid-column: 1 / -1; justify-content: flex-end; } .thumb { width: 56px; } }
+.thumb { width: 72px; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 6px; background: #000 center / cover no-repeat;
+  display: grid; place-items: center; color: var(--c-mute); font-size: 20px; overflow: hidden; }
+.meta { min-width: 0; display: grid; gap: 4px; }
+.meta input.name { width: 100%; font: 600 14px/1.3 var(--ui); color: var(--c-text); background: transparent; border: 1px solid transparent;
+  border-radius: 6px; padding: 3px 6px; margin-left: -6px; }
+.meta input.name:hover { border-color: var(--c-line); }
+.meta input.name:focus { background: var(--c-bg); border-color: var(--c-gold); outline: none; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; color: var(--c-mute); font-size: 12px; }
+.tag { padding: 1px 7px; border-radius: 99px; border: 1px solid var(--c-line); font-weight: 600; }
+.tag.live { color: #fff; background: var(--c-air); border-color: var(--c-air); }
+.tag.next { color: #1a1406; background: var(--c-gold); border-color: var(--c-gold); }
+.tags select, .tags .tog { font: 12px var(--ui); color: var(--c-text); background: var(--c-bg); border: 1px solid var(--c-line); border-radius: 6px; padding: 3px 6px; cursor: pointer; }
+.tags .fname { font-size: 11px; color: var(--c-mute); opacity: .8; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tags .tog.off { color: var(--c-warn); border-color: rgba(240,164,58,.5); }
+.tags .tog.rep { color: var(--c-gold); border-color: rgba(226,184,92,.6); }
+.acts { display: flex; gap: 4px; align-items: center; }
+.acts .btn { padding: 7px 9px; }
+.empty { color: var(--c-mute); padding: 6px 2px; }
+.bgs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bgs .wide { grid-column: 1 / -1; }
+.bgload { margin-top: 10px; }
+.bgload .btn { padding: 8px 10px; font-size: 12px; }
+#bgPanel.over { border-color: var(--c-gold); box-shadow: inset 0 0 0 1px var(--c-gold); }
+.bglist { display: grid; gap: 5px; margin-top: 10px; }
+.bgrow { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 5px 6px;
+  background: var(--c-raise); border: 1px solid var(--c-line); border-radius: 9px; }
+.bgrow.live { border-color: var(--c-air); background: #2a1a20; }
+.bgrow.out .bgpick { opacity: .55; }
+.bgpick { display: contents; cursor: pointer; }
+.bgthumb { width: 52px; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 5px; background: #0a1430 center / contain no-repeat; cursor: pointer;
+  display: grid; place-items: center; font: 700 11px/1 var(--display); color: var(--c-gold); overflow: hidden; }
+.bgname { min-width: 0; cursor: pointer; display: grid; gap: 2px; }
+.bgname b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgname small { color: var(--c-mute); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgname small .tag { padding: 0 6px; font-size: 10px; }
+.bgacts { display: flex; gap: 3px; }
+.bgacts .btn { padding: 5px 7px; font-size: 12px; }
+.bgacts .rot[aria-pressed="true"] { color: var(--c-gold); border-color: rgba(226,184,92,.6); }
+.bgacts .rot[aria-pressed="false"] { color: var(--c-mute); }
+.timing { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--c-line); font-size: 13px; }
+.timing label { color: var(--c-mute); }
+.step { display: flex; align-items: center; gap: 4px; }
+.step .btn { padding: 6px 10px; font-size: 15px; }
+.step input { width: 58px; text-align: right; font: 700 15px/1 var(--ui); font-variant-numeric: tabular-nums; color: var(--c-text);
+  background: var(--c-bg); border: 1px solid var(--c-line); border-radius: 6px; padding: 6px; -moz-appearance: textfield; }
+.step input::-webkit-inner-spin-button, .step input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.step span { color: var(--c-mute); margin-right: 2px; }
+.nextchg { grid-column: 1 / -1; margin: 2px 0 0; color: var(--c-mute); font-variant-numeric: tabular-nums; }
+.nextchg b { color: var(--c-gold); }
+.vol { display: flex; align-items: center; gap: 10px; }
+.vol input { flex: 1; min-width: 0; accent-color: var(--c-gold); }
+.vol b { font-variant-numeric: tabular-nums; width: 44px; text-align: right; }
+.keys { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; align-items: center; font-size: 13px; margin: 0; }
+.keys dd { margin: 0; color: var(--c-mute); }
+.c-toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 10px); background: var(--c-gold); color: #1a1406;
+  font-weight: 700; padding: 10px 16px; border-radius: 999px; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; z-index: 5; }
+.c-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.c-toast.bad { background: var(--c-air); color: #fff; }
+.help { color: var(--c-mute); font-size: 13px; margin: 8px 0 0; }
+</style>
+
+<template id="tplPantalla">
+<!--ESCENAS-->
+<section class="scene media" id="sM1"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline preload="auto"></video></section>
+<section class="scene media" id="sM2"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline preload="auto"></video></section>
+<section class="scene media bgm" id="sU1"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline muted loop preload="auto"></video></section>
+<section class="scene media bgm" id="sU2"><img class="blur" alt=""><img class="main" alt=""><video class="main" playsinline muted loop preload="auto"></video></section>
+<section class="scene" id="sN" aria-label="Negro"></section>
+<audio id="mus" preload="auto"></audio>
+<div class="arranque" id="arranque"><div><strong>Pantalla del proyector</strong><span id="arrTxt">Hacé clic acá una vez para activar el sonido y la pantalla completa.</span><small>Si esta ventana no está en el proyector, movela con Super + Shift + flecha izquierda o derecha.</small></div></div>
+</template>
+
+<template id="tplConsola">
+<header class="c-top">
+  <h1 class="c-brand">Consola del acto <span>70 años · Instituto Superior Cristo Rey</span></h1>
+  <span class="pill" id="conn">Pantalla del proyector cerrada</span>
+  <button class="btn prim" id="abrir" type="button">Abrir pantalla del proyector</button>
+</header>
+<div class="c-grid">
+  <main class="c-col">
+    <div class="c-now">
+      <section class="panel onair" aria-live="polite">
+        <h2>Al aire</h2>
+        <p class="big-name" id="airName">Fondos animados</p>
+        <p class="sub" id="airSub">Rotación automática</p>
+        <div class="seek" id="airSeek" role="slider" aria-label="Posición del video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="airBar"></i></div><span class="tip"></span></div>
+        <div class="times"><span id="airT">—</span><b id="airLeft">—</b></div>
+      </section>
+      <section class="panel nextp">
+        <h2>Siguiente · <span class="kbd">Espacio</span></h2>
+        <p class="big-name" id="nextName">Sin contenidos cargados</p>
+        <p class="sub" id="nextSub">Cargá una carpeta con videos, imágenes o música.</p>
+      </section>
+    </div>
+    <section class="panel">
+      <h2>Programa</h2>
+      <div class="load">
+        <label class="btn" for="inDir">Elegir carpeta<input type="file" id="inDir" webkitdirectory multiple></label>
+        <label class="btn" for="inFiles">Agregar archivos<input type="file" id="inFiles" multiple accept="video/*,image/*,audio/*,.mkv,.mov"></label>
+        <button class="btn" id="vaciar" type="button">Vaciar programa</button>
+      </div>
+      <p class="help">El orden inicial sigue el nombre de los archivos: nombralos <b>01 Bienvenida.mp4</b>, <b>02 Danza folklórica.mp4</b>… Al elegir la carpeta, el programa se arma de nuevo en el orden de los nombres. Los ajustes de cada archivo se recuerdan en esta computadora.</p>
+      <div class="drop" id="drop">También podés arrastrar archivos acá.</div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+  <aside class="c-col">
+    <section class="panel" id="bgPanel">
+      <h2>Fondos animados · <span class="kbd">F</span></h2>
+      <div class="bgs">
+        <button class="btn" data-bg="rotar" type="button">Rotación automática</button>
+        <button class="btn" data-bg="negro" type="button">Negro · N</button>
+      </div>
+      <div class="load bgload">
+        <label class="btn" for="bgDir">Elegir carpeta<input type="file" id="bgDir" webkitdirectory multiple></label>
+        <label class="btn" for="bgFiles">Agregar archivos<input type="file" id="bgFiles" multiple accept="video/*,image/*,.mkv,.mov"></label>
+        <button class="btn" id="bgVaciar" type="button">Quitar agregados</button>
+      </div>
+      <p class="help">Tocá un fondo para dejarlo fijo. <b>↻</b> indica si entra en la rotación automática. También podés arrastrar imágenes o videos sobre este panel.</p>
+      <div class="bglist" id="bgList"></div>
+      <div class="timing">
+        <label for="inFondo">Cada fondo dura</label>
+        <div class="step"><button class="btn" type="button" data-step="fondo" data-d="-10" aria-label="Menos tiempo por fondo">−</button><input type="number" id="inFondo" min="5" max="1800" step="5" inputmode="numeric"><span>s</span><button class="btn" type="button" data-step="fondo" data-d="10" aria-label="Más tiempo por fondo">+</button></div>
+        <label for="inFade">Fundido entre fondos</label>
+        <div class="step"><button class="btn" type="button" data-step="fade" data-d="-0.5" aria-label="Fundido más corto">−</button><input type="number" id="inFade" min="0.2" max="8" step="0.1" inputmode="decimal"><span>s</span><button class="btn" type="button" data-step="fade" data-d="0.5" aria-label="Fundido más largo">+</button></div>
+        <p class="nextchg" id="nextChg">—</p>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Música</h2>
+      <p class="big-name" id="musName" style="font-size:16px">Sin música</p>
+      <div class="seek" id="musSeek" role="slider" aria-label="Posición de la música" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="musBar" style="background:var(--c-gold)"></i></div><span class="tip"></span></div>
+      <div class="times"><span id="musT">—</span><b id="musLeft" style="font-size:16px">—</b></div>
+      <div class="load" style="margin-top:10px"><button class="btn" id="musLoop" type="button" aria-pressed="false">Repetir · R</button><button class="btn" id="musStop" type="button">Cortar música · S</button></div>
+    </section>
+    <section class="panel">
+      <h2>Volumen</h2>
+      <div class="vol"><input type="range" id="vol" min="0" max="100" value="100" aria-label="Volumen general"><b id="volV">100%</b></div>
+    </section>
+    <section class="panel">
+      <h2>Teclas</h2>
+      <dl class="keys">
+        <dt><span class="kbd">Espacio</span></dt><dd>Lanzar el siguiente</dd>
+        <dt><span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Elegir cuál es el siguiente</dd>
+        <dt><span class="kbd">1</span>–<span class="kbd">9</span></dt><dd>Lanzar directo ese número</dd>
+        <dt><span class="kbd">F</span></dt><dd>Volver a los fondos animados</dd>
+        <dt><span class="kbd">N</span></dt><dd>Negro</dd>
+        <dt><span class="kbd">P</span></dt><dd>Pausar o seguir video / música</dd>
+        <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Retroceder o adelantar 5 segundos</dd>
+        <dt><span class="kbd">R</span></dt><dd>Repetir o no la música que suena</dd>
+        <dt><span class="kbd">S</span></dt><dd>Cortar la música con fundido</dd>
+        <dt><span class="kbd">+</span> <span class="kbd">−</span></dt><dd>Subir o bajar volumen</dd>
+      </dl>
+      <p class="help">Las teclas funcionan en esta ventana y también en la del proyector.</p>
+    </section>
+  </aside>
+</div>
+<div class="c-toast" id="toast" role="status"></div>
+</template>
+__VIDEO_DATA__
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const MODO_PANTALLA = location.hash === '#pantalla';
+  if (MODO_PANTALLA) pantalla(); else consola();
+
+  // =====================================================================
+  //  PANTALLA DEL PROYECTOR
+  // =====================================================================
+  function pantalla() {
+    document.body.className = 'pantalla';
+    document.title = 'Proyector · Acto 70 Años';
+    document.body.appendChild($('tplPantalla').content.cloneNode(true));
+    const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3, cambio1956: 2.2, cambio2026: 2.9 };
+    // rotación: claves de fondos propios (escudo, logo…) o 'u:<id>' para imágenes y videos agregados
+    let rot = ['escudo', 'historia', 'aniversario', 'logo'], bgKinds = {}, curKey = null, uSlot = 'u2';
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const vid = $('vid'), y1 = $('y1'), y2 = $('y2'), mus = $('mus');
+    const emb = $('vid64');
+    if (emb) {
+      const bin = atob(emb.textContent.trim()), buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      vid.src = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+      emb.remove();
+    }
+
+/*DIBUJO*/
+
+    // ----- escenas -----
+    const slot = id => { const el = $(id); return { el, blur: el.querySelector('img.blur'), img: el.querySelector('img.main'), v: el.querySelector('video') }; };
+    const M = { m1: slot('sM1'), m2: slot('sM2') }, U = { u1: slot('sU1'), u2: slot('sU2') };
+    const scenes = {
+      escudo: { el: $('sB'), draw: drawB, until: 0 },
+      aniversario: { el: $('sA'), draw: drawA, until: 0 },
+      logo: { el: $('sL'), draw: drawL, until: 0 },
+      sokoly: { el: $('sS'), draw: drawS, until: 0 },
+      historia: { el: $('sV') },
+      m1: { el: M.m1.el }, m2: { el: M.m2.el }, u1: { el: U.u1.el }, u2: { el: U.u2.el },
+      negro: { el: $('sN') }
+    };
+    const files = new Map();       // id -> { file, url }
+    let current = null, mode = 'fondos', rotar = true, idx = 0, timer = null, returnTo = null, hEnded = false;
+    let activeSlot = 'm2', cue = null, vol = 1;
+    let musId = null, musLabel = '';
+    const FADE_MS = 1800;
+
+    const urlFor = id => { const f = files.get(id); if (!f) return null; if (!f.url) f.url = URL.createObjectURL(f.file); return f.url; };
+    function ramp(el, to, ms, done) {
+      const from = el.volume, t0 = performance.now();
+      cancelAnimationFrame(el._ramp);
+      const step = now => {
+        const k = Math.min(1, (now - t0) / ms);
+        el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+        if (k < 1) el._ramp = requestAnimationFrame(step); else if (done) done();
+      };
+      el._ramp = requestAnimationFrame(step);
+    }
+    function show(name, fade) {
+      document.documentElement.style.setProperty('--fade', (fade || CONFIG.fadeSeg) + 's');
+      clearTimeout(timer);
+      const prev = current;
+      if (prev && scenes[prev].draw) scenes[prev].until = performance.now() + 2600;
+      current = name;
+      for (const [k, s] of Object.entries(scenes)) s.el.classList.toggle('on', k === name);
+      // apagar lo que sale
+      if (prev && prev !== name) {
+        if (prev === 'historia') vid.pause();
+        if (M[prev]) { const v = M[prev].v; if (!v.paused) ramp(v, 0, FADE_MS * .8, () => v.pause()); }
+        if (U[prev]) { const v = U[prev].v; setTimeout(() => { if (current !== prev) v.pause(); }, CONFIG.fadeSeg * 1000 + 200); }
+      }
+      if (name === 'historia') playHistoria();
+      schedule();
+    }
+    let nextAt = 0, startedAt = 0;
+    function schedule(ms) {
+      clearTimeout(timer); nextAt = 0;
+      if (mode === 'fondos' && rotar && current !== 'historia') {
+        if (ms === undefined) { ms = CONFIG.fondoSeg * 1000; startedAt = performance.now(); }
+        nextAt = performance.now() + ms; timer = setTimeout(nextFondo, ms);
+      }
+    }
+    function setConfig(c) {
+      if (c.fondoSeg) CONFIG.fondoSeg = Math.max(5, Math.min(1800, +c.fondoSeg));
+      if (c.fadeSeg) CONFIG.fadeSeg = Math.max(.2, Math.min(8, +c.fadeSeg));
+      // si cambia la duración con un fondo en pantalla, se respeta lo que ya lleva mostrado
+      if (nextAt) schedule(Math.max(1000, startedAt + CONFIG.fondoSeg * 1000 - performance.now()));
+    }
+    const okKey = k => k && (!k.startsWith('u:') || (bgKinds[k.slice(2)] && files.has(k.slice(2))));
+    function showBg(key) {
+      if (!okKey(key)) key = 'escudo';
+      curKey = key;
+      if (!key.startsWith('u:')) return show(key);
+      const id = key.slice(2), url = urlFor(id), name = uSlot === 'u1' ? 'u2' : 'u1', s = U[name];
+      uSlot = name;
+      if (bgKinds[id] === 'image') {
+        s.v.pause(); s.v.loop = false; s.v.removeAttribute('src'); s.v.load(); s.v.hidden = true;
+        s.img.hidden = false; s.blur.hidden = false; s.img.src = url; s.blur.src = url;
+        s.img.classList.remove('kb'); s.blur.classList.remove('kb'); void s.img.offsetWidth;
+        if (!reduce) { s.img.classList.add('kb'); s.blur.classList.add('kb'); }
+      } else {
+        s.img.hidden = true; s.blur.hidden = true; s.img.removeAttribute('src'); s.blur.removeAttribute('src');
+        s.v.hidden = false; s.v.muted = true;
+        if (s.v.dataset.id !== id) { s.v.src = url; s.v.dataset.id = id; }
+        try { s.v.currentTime = 0; } catch (e) {}
+        s.v.play().catch(() => {});
+      }
+      show(name);
+    }
+    function nextFondo() {
+      if (curKey === 'historia' && returnTo) { const r = returnTo; returnTo = null; return showBg(r); }
+      const list = rot.filter(okKey);
+      if (!list.length || (list.length === 1 && list[0] === curKey && curKey !== 'historia')) return schedule();
+      idx = (list.indexOf(curKey) + 1) % list.length;
+      showBg(list[idx]);
+    }
+    function fondos(which, rotFlag) {
+      mode = 'fondos'; cue = null;
+      if (typeof rotFlag === 'boolean') rotar = rotFlag;
+      const list = rot.filter(okKey);
+      if (which === 'historia') {
+        returnTo = (curKey && curKey !== 'historia' && okKey(curKey)) ? curKey : (list.find(k => k !== 'historia') || 'escudo');
+        curKey = 'historia'; show('historia'); return;
+      }
+      returnTo = null;
+      if (which) return showBg(which);
+      if (!list.length) return showBg('escudo');
+      // al volver a la rotación se sigue desde el último fondo mostrado
+      let n = list.includes(curKey) ? curKey : list[0];
+      if (n === 'historia' && list.length > 1) n = list[(list.indexOf(n) + 1) % list.length];
+      showBg(n);
+    }
+    function setBgList(d) {
+      rot = Array.isArray(d.rot) ? d.rot : rot; bgKinds = d.kinds || {};
+      // si se quitó el fondo agregado que estaba al aire, pasar al siguiente
+      if (mode === 'fondos' && curKey && curKey.startsWith('u:') && !okKey(curKey)) { curKey = null; fondos(null, true); }
+      else if (mode === 'fondos' && rotar && !nextAt && current !== 'historia') schedule();
+    }
+    function playHistoria() {
+      hEnded = false; y1.classList.remove('show'); y2.classList.remove('show');
+      vid.classList.remove('zoom'); void vid.offsetWidth; if (!reduce) vid.classList.add('zoom');
+      vid.muted = true;
+      try { vid.currentTime = 0; } catch (e) {}
+      vid.play().catch(() => {});
+    }
+    vid.addEventListener('ended', () => {
+      hEnded = true;
+      if (mode !== 'fondos') return;
+      timer = setTimeout(() => {
+        if (returnTo && !rotar) { const r = returnTo; returnTo = null; showBg(r); }
+        else nextFondo();
+      }, CONFIG.pausaFinalSeg * 1000);
+    });
+    function negro() { mode = 'negro'; cue = null; show('negro', 1.2); }
+
+    function lanzar(c) {
+      const url = urlFor(c.id);
+      if (!url) return;
+      if (c.kind === 'audio') return playMusic(c.id, c.label, !!c.loop);
+      const name = activeSlot === 'm1' ? 'm2' : 'm1', s = M[name];
+      s.v.onended = null; cancelAnimationFrame(s.v._ramp);
+      if (c.kind === 'image') {
+        s.v.pause(); s.v.removeAttribute('src'); s.v.load(); s.v.hidden = true;
+        s.img.hidden = false; s.blur.hidden = false; s.img.src = url; s.blur.src = url;
+      } else {
+        s.img.hidden = true; s.blur.hidden = true; s.img.removeAttribute('src'); s.blur.removeAttribute('src');
+        s.v.hidden = false; s.v.src = url; s.v.loop = c.end === 'repetir'; s.v.muted = !c.sound; s.v.volume = c.sound ? vol : 0;
+        try { s.v.currentTime = 0; } catch (e) {}
+        const p = s.v.play();
+        if (p) p.catch(() => { s.v.muted = true; s.v.play().catch(() => {}); });
+        if (c.sound && !mus.paused) stopMusic();
+        s.v.onended = () => {
+          if (!cue || cue.slot !== name) return;
+          const fin = cue.end;
+          if (fin === 'negro') negro();
+          else if (fin === 'fondos') fondos(null);
+          else if (fin === 'siguiente') {
+            // la consola sabe qué sigue; si no responde, volver a los fondos para no quedar en una imagen quieta
+            send({ type: 'terminado', id: c.id });
+            const slotAhora = name;
+            setTimeout(() => { if (cue && cue.slot === slotAhora && cue.id === c.id) fondos(null); }, 1500);
+          }
+        };
+      }
+      s.el.classList.toggle('cover', c.fit === 'llenar');
+      activeSlot = name; mode = 'media'; cue = { ...c, slot: name };
+      show(name, 1);
+    }
+    function playMusic(id, label, loop) {
+      const start = () => {
+        mus.src = urlFor(id); mus.volume = vol; musId = id; musLabel = label; mus.loop = loop;
+        mus.play().catch(() => {});
+      };
+      if (!mus.paused) ramp(mus, 0, 600, () => { mus.pause(); start(); }); else start();
+    }
+    function stopMusic() { if (!mus.paused) ramp(mus, 0, 1500, () => { mus.pause(); musId = null; }); else musId = null; }
+    mus.addEventListener('ended', () => { musId = null; });
+    function pausa() {
+      const v = cue && cue.kind === 'video' ? M[cue.slot].v : null;
+      if (v) { v.paused ? v.play().catch(() => {}) : v.pause(); return; }
+      if (musId) mus.paused ? mus.play().catch(() => {}) : mus.pause();
+    }
+    function setVol(x) {
+      vol = Math.max(0, Math.min(1, x));
+      mus.volume = vol;
+      if (cue && cue.kind === 'video' && cue.sound) M[cue.slot].v.volume = vol;
+    }
+
+    // ----- comunicación con la consola -----
+    const consola = window.opener;
+    const send = m => { try { consola && !consola.closed && consola.postMessage(m, '*'); } catch (e) {} };
+    addEventListener('message', e => {
+      if (e.source !== consola) return;
+      const d = e.data || {};
+      if (d.type === 'files') for (const f of d.items) { if (!files.has(f.id)) files.set(f.id, { file: f.file }); }
+      else if (d.type === 'cmd') {
+        if (d.cmd === 'cue') lanzar(d.cue);
+        else if (d.cmd === 'config') setConfig(d);
+        else if (d.cmd === 'bgList') setBgList(d);
+        else if (d.cmd === 'cueUpdate' && cue && cue.id === d.id) {
+          if (d.end) { cue.end = d.end; if (cue.kind === 'video') M[cue.slot].v.loop = d.end === 'repetir'; }
+          if (d.fit) { cue.fit = d.fit; M[cue.slot].el.classList.toggle('cover', d.fit === 'llenar'); }
+          if (typeof d.sound === 'boolean' && cue.kind === 'video') {
+            cue.sound = d.sound; const v = M[cue.slot].v;
+            cancelAnimationFrame(v._ramp); v.muted = !d.sound; v.volume = d.sound ? vol : 0;
+            if (d.sound && !mus.paused) stopMusic();
+          }
+        }
+        else if (d.cmd === 'fondos') fondos(d.which, d.rotar);
+        else if (d.cmd === 'negro') negro();
+        else if (d.cmd === 'pausa') pausa();
+        else if (d.cmd === 'seek' || d.cmd === 'nudge') {
+          const el = d.target === 'music' ? (musId ? mus : null) : (cue && cue.kind === 'video' ? M[cue.slot].v : null);
+          if (el && isFinite(el.duration)) {
+            const to = d.cmd === 'seek' ? d.frac * el.duration : el.currentTime + d.delta;
+            el.currentTime = Math.max(0, Math.min(el.duration - .05, to));
+            if (el.ended || (el === mus && el.paused && musId)) el.play().catch(() => {});
+          }
+        }
+        else if (d.cmd === 'stopMusic') stopMusic();
+        else if (d.cmd === 'loopMusic') mus.loop = !!d.v;
+        else if (d.cmd === 'vol') setVol(d.v);
+      }
+    });
+    setInterval(() => {
+      const v = cue && cue.kind === 'video' ? M[cue.slot].v : null;
+      send({ type: 'estado', mode, current: curKey, rotar, cueId: cue ? cue.id : null, kind: cue ? cue.kind : null,
+        t: v ? v.currentTime : 0, dur: v && isFinite(v.duration) ? v.duration : 0, paused: v ? v.paused : false, ended: v ? v.ended : false,
+        mus: musId ? { id: musId, label: musLabel, t: mus.currentTime, dur: isFinite(mus.duration) ? mus.duration : 0, paused: mus.paused, loop: mus.loop } : null,
+        activo: !!(navigator.userActivation && navigator.userActivation.hasBeenActive) || document.body.classList.contains('listo'),
+        full: !!document.fullscreenElement, fondoSeg: CONFIG.fondoSeg, fadeSeg: CONFIG.fadeSeg,
+        nextIn: nextAt ? Math.max(0, (nextAt - performance.now()) / 1000) : null });
+    }, 250);
+    addEventListener('keydown', e => {
+      if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+      send({ type: 'tecla', key: e.key });
+    });
+    const arr = $('arranque');
+    if (!consola) $('arrTxt').textContent = 'Esta ventana se abre desde la consola: abrí el archivo y usá el botón "Abrir pantalla del proyector".';
+    arr.addEventListener('click', () => {
+      document.body.classList.add('listo');
+      try { document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+    });
+    addEventListener('dblclick', () => {
+      try { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); } catch (e) {}
+    });
+    let idle; const wake = () => { document.body.classList.remove('idle'); clearTimeout(idle); idle = setTimeout(() => document.body.classList.add('idle'), 2000); };
+    addEventListener('mousemove', wake); wake();
+    const lock = () => { try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {} };
+    lock(); document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && lock());
+    addEventListener('beforeunload', e => { if (consola && !consola.closed) { e.preventDefault(); e.returnValue = ''; } });
+
+    let t = 0;
+    (function frame() {
+      t++;
+      const now = performance.now();
+      for (const [k, s] of Object.entries(scenes)) if (s.draw && (k === current || now < s.until)) s.draw(t);
+      if (current === 'historia') {
+        const ct = vid.currentTime;
+        y1.classList.toggle('show', !hEnded && ct > .3 && ct < CONFIG.cambio1956);
+        y2.classList.toggle('show', ct > CONFIG.cambio2026 || hEnded);
+      }
+      requestAnimationFrame(frame);
+    })();
+    fondos(null, true);
+    send({ type: 'hola' });
+  }
+
+  // =====================================================================
+  //  CONSOLA
+  // =====================================================================
+  function consola() {
+    document.body.className = 'consola';
+    document.body.appendChild($('tplConsola').content.cloneNode(true));
+    const emb = $('vid64'); if (emb) emb.remove();
+    const KEY = 'acto70:programa';
+    const VIDEO_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)$/i, IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)$/i, AUD_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i;
+    let items = [], sel = 0, win = null, est = null, lastEst = 0, vol = 1;
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+    saved.items = saved.items || {}; saved.order = saved.order || [];
+    saved.config = Object.assign({ fondoSeg: 60, fadeSeg: 1.8 }, saved.config || {});
+    const persist = () => {
+      saved.order = items.map(i => i.id);
+      for (const i of items) saved.items[i.id] = { label: i.label, sound: i.sound, end: i.end, loop: i.loop, fit: i.fit };
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    };
+
+    const toastEl = $('toast'); let tt;
+    const toast = (m, bad) => { toastEl.textContent = m; toastEl.classList.toggle('bad', !!bad); toastEl.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1800); };
+    const fmt = s => { if (!isFinite(s) || s <= 0) return '0:00'; s = Math.round(s); const m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); };
+    const kindOf = f => {
+      const t = f.type || '';
+      if (t.startsWith('video/') || VIDEO_EXT.test(f.name)) return 'video';
+      if (t.startsWith('image/') || IMG_EXT.test(f.name)) return 'image';
+      if (t.startsWith('audio/') || AUD_EXT.test(f.name)) return 'audio';
+      return null;
+    };
+    const cleanName = n => n.replace(/\.[^.]+$/, '').replace(/^\s*\d+\s*[-_.)]*\s*/, '').replace(/[_]+/g, ' ').trim() || n;
+    const KIND_TXT = { video: 'Video', image: 'Imagen', audio: 'Música' };
+
+    // ----- carga de archivos -----
+    // replace = true (Elegir carpeta): la carpeta reemplaza el programa y el orden es el de los nombres de archivo
+    function addFiles(list, replace) {
+      const fresh = [];
+      const nuevos = [...list].filter(f => kindOf(f));
+      if (replace && nuevos.length) { items = []; sel = 0; }
+      for (const f of list) {
+        const kind = kindOf(f); if (!kind) continue;
+        const id = f.name + '|' + f.size + '|' + f.lastModified;
+        if (items.some(i => i.id === id)) continue;
+        const s = saved.items[id] || {};
+        fresh.push({ id, file: f, kind, name: f.name, label: s.label || cleanName(f.name),
+          sound: s.sound !== undefined ? s.sound : true, end: s.end || 'fondos', loop: !!s.loop, fit: s.fit || 'entera', dur: 0, thumb: '' });
+      }
+      if (!fresh.length) { toast('No encontré videos, imágenes ni música nuevos', true); return; }
+      fresh.sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
+      items = items.concat(fresh);
+      for (const it of fresh) analyze(it);
+      persist(); sendFiles(fresh); render();
+      toast(replace ? 'Programa cargado: ' + fresh.length + ' contenidos, en el orden de los nombres' : fresh.length + (fresh.length === 1 ? ' contenido agregado' : ' contenidos agregados'));
+    }
+    function analyze(it, upd) {
+      upd = upd || renderRow;
+      const url = URL.createObjectURL(it.file);
+      if (it.kind === 'image') { it.thumb = url; return; }
+      const el = document.createElement(it.kind === 'video' ? 'video' : 'audio');
+      el.preload = 'metadata'; el.muted = true; el.src = url;
+      el.addEventListener('loadedmetadata', () => {
+        it.dur = el.duration; upd(it);
+        if (it.kind === 'video') { try { el.currentTime = Math.min(1.5, el.duration / 3); } catch (e) {} }
+      });
+      el.addEventListener('seeked', () => {
+        try {
+          const c = document.createElement('canvas'); c.width = 160; c.height = 90;
+          const x = c.getContext('2d'), r = Math.max(160 / el.videoWidth, 90 / el.videoHeight);
+          const w = el.videoWidth * r, h = el.videoHeight * r;
+          x.drawImage(el, (160 - w) / 2, (90 - h) / 2, w, h);
+          it.thumb = c.toDataURL('image/jpeg', .7); upd(it);
+        } catch (e) {}
+        el.removeAttribute('src'); el.load();
+      });
+      el.addEventListener('error', () => { it.err = true; upd(it); });
+    }
+    $('inDir').addEventListener('change', e => { addFiles(e.target.files, true); e.target.value = ''; });
+    $('inFiles').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+    const drop = $('drop');
+    const overBg = e => !!(e.target && e.target.closest && e.target.closest('#bgPanel'));
+    addEventListener('dragover', e => {
+      e.preventDefault(); const bg = overBg(e);
+      $('bgPanel').classList.toggle('over', bg); drop.hidden = bg && items.length > 0; drop.classList.toggle('over', !bg);
+    });
+    addEventListener('dragleave', e => { if (!e.relatedTarget) { drop.classList.remove('over'); $('bgPanel').classList.remove('over'); drop.hidden = items.length > 0; } });
+    addEventListener('drop', e => {
+      e.preventDefault(); const bg = overBg(e);
+      drop.classList.remove('over'); $('bgPanel').classList.remove('over'); drop.hidden = items.length > 0;
+      if (e.dataTransfer.files.length) bg ? addBg(e.dataTransfer.files) : addFiles(e.dataTransfer.files);
+    });
+    $('vaciar').addEventListener('click', () => {
+      if ($('vaciar').dataset.sure) { items = []; sel = 0; delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; render(); return; }
+      $('vaciar').dataset.sure = '1'; $('vaciar').textContent = '¿Seguro? Clic de nuevo';
+      setTimeout(() => { if ($('vaciar').dataset.sure) { delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; } }, 3000);
+    });
+
+    // ----- fondos: los animados propios y las imágenes o videos agregados -----
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const tplP = $('tplPantalla').content;
+    const BUILTIN = [
+      { key: 'escudo', label: 'Escudo', src: '#crest', bgc: '#0b1d36' },
+      { key: 'historia', label: 'Video de la historia', txt: '1956', bgc: '#4a3a28' },
+      { key: 'aniversario', label: 'Aniversario', txt: '70', bgc: '#13254f' },
+      { key: 'logo', label: 'Logo 70 años', src: '#logo70', bgc: '#eef3ff' },
+      { key: 'sokoly', label: 'Вільні Соколи', src: '#sokoly', bgc: '#0a1a4a' }
+    ].map(b => ({ ...b, builtin: true }));
+    // miniaturas chicas de los logos, para no repetir imágenes pesadas en la lista
+    for (const b of BUILTIN) if (b.src) {
+      const el = tplP.querySelector(b.src), im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas'); c.width = 104; c.height = 58; const x = c.getContext('2d');
+        x.fillStyle = b.bgc; x.fillRect(0, 0, 104, 58);
+        const r = Math.min(96 / im.width, 52 / im.height); x.drawImage(im, (104 - im.width * r) / 2, (58 - im.height * r) / 2, im.width * r, im.height * r);
+        b.thumb = c.toDataURL('image/jpeg', .8); renderBg();
+      };
+      if (el) im.src = el.getAttribute('src');
+    }
+    saved.bg = Object.assign({ order: [], rot: {} }, saved.bg || {});
+    let bgUser = [];
+    const inRot = k => (k in saved.bg.rot) ? saved.bg.rot[k] : k !== 'sokoly';
+    function bgEntries() {
+      const all = BUILTIN.concat(bgUser), pos = k => { const i = saved.bg.order.indexOf(k); return i < 0 ? 1e6 : i; };
+      return all.map((e, i) => [e, i]).sort((a, b) => (pos(a[0].key) - pos(b[0].key)) || (a[1] - b[1])).map(x => x[0]);
+    }
+    const bgLabel = k => (bgEntries().find(e => e.key === k) || {}).label || '';
+    function sendBg() {
+      if (!win || win.closed) return;
+      sendFiles(bgUser);
+      const kinds = {}; for (const u of bgUser) if (!u.err) kinds[u.id] = u.kind;
+      try { win.postMessage({ type: 'cmd', cmd: 'bgList', rot: bgEntries().filter(e => inRot(e.key) && !e.err).map(e => e.key), kinds }, '*'); } catch (e) {}
+    }
+    function addBg(list) {
+      const fresh = [];
+      for (const f of list) {
+        const kind = kindOf(f);
+        if (kind !== 'image' && kind !== 'video') continue;
+        const id = 'bg|' + f.name + '|' + f.size + '|' + f.lastModified;
+        if (bgUser.some(u => u.id === id)) continue;
+        fresh.push({ id, key: 'u:' + id, file: f, kind, name: f.name, label: cleanName(f.name), thumb: '', dur: 0, bgc: '#000' });
+      }
+      if (!fresh.length) { toast('No encontré imágenes ni videos nuevos para fondos', true); return; }
+      fresh.sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
+      bgUser = bgUser.concat(fresh);
+      for (const u of fresh) analyze(u, () => renderBg());
+      renderBg(); sendBg();
+      toast(fresh.length + (fresh.length === 1 ? ' fondo agregado a la rotación' : ' fondos agregados a la rotación'));
+    }
+    $('bgDir').addEventListener('change', e => { addBg(e.target.files); e.target.value = ''; });
+    $('bgFiles').addEventListener('change', e => { addBg(e.target.files); e.target.value = ''; });
+    $('bgVaciar').addEventListener('click', () => {
+      const b = $('bgVaciar');
+      if (!bgUser.length) { toast('No hay fondos agregados'); return; }
+      if (b.dataset.sure) { bgUser = []; delete b.dataset.sure; b.textContent = 'Quitar agregados'; renderBg(); sendBg(); toast('Se quitaron los fondos agregados'); return; }
+      b.dataset.sure = '1'; b.textContent = '¿Seguro? Clic de nuevo';
+      setTimeout(() => { if (b.dataset.sure) { delete b.dataset.sure; b.textContent = 'Quitar agregados'; } }, 3000);
+    });
+    const bgListEl = $('bgList');
+    let bgLive = null;
+    function renderBg() {
+      const live = est && alive() && est.mode === 'fondos' ? est.current : null;
+      bgLive = live;
+      const list = bgEntries();
+      bgListEl.innerHTML = list.map((e, i) => {
+        const on = inRot(e.key), isLive = live === e.key;
+        const kindTxt = e.builtin ? 'Animado' : e.err ? 'No se puede leer' : e.kind === 'video' ? 'Video' + (e.dur ? ' · ' + fmt(e.dur) : '') : 'Imagen';
+        return `<div class="bgrow${isLive ? ' live' : ''}${on ? '' : ' out'}" data-key="${esc(e.key)}">
+          <span class="bgthumb" data-act="show" title="Dejar fijo" style="background-color:${e.bgc};${e.thumb ? `background-image:url('${e.thumb}')` : ''}">${e.thumb ? '' : e.txt || (e.kind === 'video' ? '▶' : '')}</span>
+          <span class="bgname" data-act="show" title="Dejar fijo"><b>${esc(e.label)}</b><small>${isLive ? '<span class="tag live">AL AIRE</span> ' : ''}${kindTxt}${on ? '' : ' · no rota'}</small></span>
+          <span class="bgacts">
+            <button type="button" class="btn rot" data-act="rot" aria-pressed="${on}" aria-label="${on ? 'Sacar de la rotación' : 'Incluir en la rotación'}" title="${on ? 'En la rotación: clic para sacarlo' : 'Fuera de la rotación: clic para incluirlo'}">↻</button>
+            <button type="button" class="btn" data-act="up" aria-label="Subir"${i === 0 ? ' disabled' : ''}>↑</button>
+            <button type="button" class="btn" data-act="down" aria-label="Bajar"${i === list.length - 1 ? ' disabled' : ''}>↓</button>
+            ${e.builtin ? '' : '<button type="button" class="btn" data-act="del" aria-label="Quitar este fondo" title="Quitar">✕</button>'}
+          </span></div>`;
+      }).join('');
+    }
+    bgListEl.addEventListener('click', e => {
+      const row = e.target.closest('.bgrow'); if (!row) return;
+      const key = row.dataset.key, a = e.target.closest('[data-act]'), act = a && a.dataset.act;
+      const list = bgEntries(), i = list.findIndex(x => x.key === key), ent = list[i];
+      if (!ent) return;
+      if (act === 'show') { if (ent.err) return toast('Ese archivo no se puede mostrar', true); return fondos(key); }
+      if (act === 'rot') {
+        saved.bg.rot[key] = !inRot(key); persist(); renderBg(); sendBg();
+        return toast(inRot(key) ? ent.label + ' entra en la rotación' : ent.label + ' sale de la rotación');
+      }
+      if (act === 'up' || act === 'down') {
+        const j = act === 'up' ? i - 1 : i + 1; if (j < 0 || j >= list.length) return;
+        const keys = list.map(x => x.key); [keys[i], keys[j]] = [keys[j], keys[i]];
+        saved.bg.order = keys; persist(); renderBg(); sendBg(); return;
+      }
+      if (act === 'del') { bgUser = bgUser.filter(u => u.key !== key); renderBg(); sendBg(); toast('Fondo quitado: ' + ent.label); }
+    });
+
+    // ----- lista del programa -----
+    const listEl = $('list');
+    function rowHTML(it, i) {
+      const live = est && est.cueId === it.id && est.mode === 'media';
+      const musLive = est && est.mus && est.mus.id === it.id;
+      const fitBtn = `<button type="button" class="tog${it.fit === 'llenar' ? ' rep' : ''}" data-act="fit" title="Entera: se ve todo, con bandas si el formato no coincide. Llenar: ocupa toda la pantalla y recorta los bordes.">${it.fit === 'llenar' ? '⛶ Llenar pantalla' : '▭ Entera'}</button>`;
+      const opts = it.kind === 'video'
+        ? `<button type="button" class="tog${it.sound ? '' : ' off'}" data-act="sound">${it.sound ? 'Con sonido' : 'Sin sonido'}</button>${fitBtn}
+           <label>Al terminar <select data-act="end">
+             <option value="fondos"${it.end === 'fondos' ? ' selected' : ''}>volver a fondos</option>
+             <option value="negro"${it.end === 'negro' ? ' selected' : ''}>negro</option>
+             <option value="siguiente"${it.end === 'siguiente' ? ' selected' : ''}>pasar al siguiente</option>
+             <option value="repetir"${it.end === 'repetir' ? ' selected' : ''}>repetir</option>
+             <option value="congelar"${it.end === 'congelar' ? ' selected' : ''}>quedar en la última imagen</option>
+           </select></label>` : it.kind === 'audio' ? `<button type="button" class="tog${it.loop ? ' rep' : ''}" data-act="loop" aria-pressed="${it.loop}">${it.loop ? '↻ Se repite' : 'Suena una vez'}</button><span>No cambia la pantalla</span>` : fitBtn + '<span>Queda en pantalla hasta el próximo</span>';
+      return `<span class="n">${i < 9 ? `<span class="kbd" title="Tecla ${i + 1}">${i + 1}</span>` : i + 1}</span>
+        <span class="thumb" style="${it.thumb ? `background-image:url('${it.thumb}')` : ''}">${it.thumb ? '' : it.kind === 'audio' ? '♪' : it.err ? '!' : ''}</span>
+        <span class="meta">
+          <input class="name" data-act="label" value="${it.label.replace(/"/g, '&quot;')}" aria-label="Nombre de ${it.name.replace(/"/g, '&quot;')}" spellcheck="false">
+          <span class="tags">
+            ${live || musLive ? '<span class="tag live">AL AIRE</span>' : i === sel ? '<span class="tag next">SIGUIENTE</span>' : ''}
+            <span class="tag">${KIND_TXT[it.kind]}${it.dur ? ' · ' + fmt(it.dur) : ''}</span>
+            <span class="fname" title="Nombre del archivo">${it.name.replace(/</g, '&lt;')}</span>
+            ${it.err ? '<span style="color:var(--c-warn)">Este navegador no puede leer el archivo</span>' : opts}
+          </span>
+        </span>
+        <span class="acts">
+          <button type="button" class="btn${live || musLive ? ' air' : ''}" data-act="go" title="Lanzar ahora">▶ Lanzar</button>
+          <button type="button" class="btn" data-act="up" title="Subir" aria-label="Subir">↑</button>
+          <button type="button" class="btn" data-act="down" title="Bajar" aria-label="Bajar">↓</button>
+          <button type="button" class="btn" data-act="del" title="Quitar del programa" aria-label="Quitar">✕</button>
+        </span>`;
+    }
+    let pending = false;
+    listEl.addEventListener('focusout', () => setTimeout(() => { if (pending && !listEl.contains(document.activeElement)) { pending = false; render(); } }, 0));
+    function render() {
+      if (listEl.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') { pending = true; updateNext(); return; }
+      $('drop').hidden = items.length > 0;
+      if (!items.length) { listEl.innerHTML = '<p class="empty">Todavía no hay contenidos. Elegí la carpeta del acto.</p>'; updateNext(); return; }
+      listEl.innerHTML = '';
+      items.forEach((it, i) => {
+        const r = document.createElement('div');
+        r.className = 'c-row'; r.dataset.id = it.id; r.tabIndex = -1;
+        listEl.appendChild(r); paint(r, it, i);
+      });
+      updateNext();
+    }
+    function paint(r, it, i) {
+      const live = est && ((est.cueId === it.id && est.mode === 'media') || (est.mus && est.mus.id === it.id));
+      r.classList.toggle('sel', i === sel); r.classList.toggle('live', !!live);
+      r.innerHTML = rowHTML(it, i);
+    }
+    function renderRow(it) {
+      const i = items.indexOf(it), r = listEl.querySelector(`[data-id="${CSS.escape(it.id)}"]`);
+      if (r && i >= 0 && !r.contains(document.activeElement)) paint(r, it, i);
+      if (i === sel) updateNext();
+    }
+    listEl.addEventListener('click', e => {
+      const r = e.target.closest('.c-row'); if (!r) return;
+      const i = items.findIndex(x => x.id === r.dataset.id), it = items[i];
+      const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
+      if (act === 'go') return fire(i);
+      if (act === 'up' && i > 0) { [items[i - 1], items[i]] = [items[i], items[i - 1]]; if (sel === i) sel--; else if (sel === i - 1) sel++; persist(); return render(); }
+      if (act === 'down' && i < items.length - 1) { [items[i + 1], items[i]] = [items[i], items[i + 1]]; if (sel === i) sel++; else if (sel === i + 1) sel--; persist(); return render(); }
+      if (act === 'del') { items.splice(i, 1); if (sel > i) sel--; sel = Math.min(sel, items.length); persist(); return render(); }
+      if (act === 'sound') { it.sound = !it.sound; persist(); pushLive(it, true); toast(it.sound ? 'Con sonido' : 'Sin sonido'); return render(); }
+      if (act === 'fit') { it.fit = it.fit === 'llenar' ? 'entera' : 'llenar'; persist(); pushLive(it, true); toast(it.fit === 'llenar' ? 'Llenar pantalla: recorta los bordes' : 'Entera: se ve completa'); return render(); }
+      if (act === 'loop') {
+        it.loop = !it.loop; persist(); render();
+        if (est && est.mus && est.mus.id === it.id) send({ type: 'cmd', cmd: 'loopMusic', v: it.loop });
+        return;
+      }
+      if (act === 'label' || act === 'end') return;
+      sel = i; render();
+    });
+    listEl.addEventListener('change', e => {
+      const r = e.target.closest('.c-row'); if (!r) return;
+      const it = items.find(x => x.id === r.dataset.id);
+      if (e.target.dataset.act === 'end') { it.end = e.target.value; persist(); pushLive(it); e.target.blur(); }
+      if (e.target.dataset.act === 'label') { it.label = e.target.value.trim() || cleanName(it.name); persist(); updateNext(); }
+    });
+    listEl.addEventListener('keydown', e => { if (e.target.dataset.act === 'label' && e.key === 'Enter') e.target.blur(); });
+    function updateNext() {
+      const it = items[sel];
+      $('nextName').textContent = it ? `${sel + 1}. ${it.label}` : items.length ? 'Fin del programa' : 'Sin contenidos cargados';
+      $('nextSub').textContent = it ? `${KIND_TXT[it.kind]}${it.dur ? ' · ' + fmt(it.dur) : ''}${it.kind === 'video' ? (it.sound ? ' · con sonido' : ' · sin sonido') : ''}`
+        : items.length ? 'Usá ↑ para volver a elegir uno.' : 'Cargá una carpeta con videos, imágenes o música.';
+    }
+
+    // ----- conexión con el proyector -----
+    const alive = () => win && !win.closed && performance.now() - lastEst < 2000;
+    // ----- barras de progreso para desplazarse -----
+    const seekDrag = { air: false, mus: false };
+    function wireSeek(boxId, barId, key, target, durOf) {
+      const box = $(boxId), fill = $(barId), tip = box.querySelector('.tip'), bar = box.querySelector('.bar');
+      const frac = e => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+      const showTip = f => { const d = durOf(); tip.textContent = fmt(f * d); tip.style.left = (f * 100) + '%'; };
+      box.addEventListener('pointermove', e => { if (!box.classList.contains('can')) return; const f = frac(e); showTip(f); if (seekDrag[key]) fill.style.width = (f * 100) + '%'; });
+      box.addEventListener('pointerdown', e => {
+        if (!box.classList.contains('can') || e.button !== 0) return;
+        seekDrag[key] = true; box.classList.add('drag'); box.setPointerCapture(e.pointerId);
+        const f = frac(e); fill.style.width = (f * 100) + '%'; showTip(f);
+      });
+      const end = e => {
+        if (!seekDrag[key]) return;
+        const f = frac(e); seekDrag[key] = false; box.classList.remove('drag');
+        send({ type: 'cmd', cmd: 'seek', target, frac: f }) && toast('Saltando a ' + fmt(f * durOf()));
+      };
+      box.addEventListener('pointerup', end);
+      box.addEventListener('pointercancel', () => { seekDrag[key] = false; box.classList.remove('drag'); });
+    }
+    function nudge(delta) {
+      const vid = est && est.mode === 'media' && est.kind === 'video' && est.dur;
+      const target = vid ? 'video' : est && est.mus ? 'music' : null;
+      if (!target || !alive()) { toast('No hay video ni música para mover', true); return; }
+      send({ type: 'cmd', cmd: 'nudge', target, delta }) && toast((delta > 0 ? 'Adelanta ' : 'Retrocede ') + Math.abs(delta) + ' s' + (target === 'music' ? ' (música)' : ''));
+    }
+    function send(m) {
+      if (!win || win.closed) { toast('Primero abrí la pantalla del proyector', true); return false; }
+      try { win.postMessage(m, '*'); return true; } catch (e) { toast('No pude comunicarme con la pantalla', true); return false; }
+    }
+    function sendFiles(list) { if (win && !win.closed) try { win.postMessage({ type: 'files', items: list.map(i => ({ id: i.id, file: i.file })) }, '*'); } catch (e) {} }
+    $('abrir').addEventListener('click', () => {
+      if (alive()) { toast('La pantalla ya está abierta'); return; }
+      const url = location.href.split('#')[0] + '#pantalla';
+      let w = window.open('', 'pantalla70', 'popup,width=1280,height=720');
+      if (!w) { toast('El navegador bloqueó la ventana: permití ventanas emergentes', true); return; }
+      let blank = false; try { blank = w.location.href === 'about:blank'; } catch (e) {}
+      if (blank) w.location.href = url; else try { w.postMessage({ type: 'files', items: [] }, '*'); } catch (e) {}
+      win = w;
+      setTimeout(() => { if (!alive() && win && !win.closed && !blank) { win.location.href = url; } }, 1500);
+    });
+    addEventListener('message', e => {
+      const d = e.data || {};
+      if (d.type === 'hola') { win = e.source; sendFiles(items); send({ type: 'cmd', cmd: 'vol', v: vol }); sendConfig(); sendBg(); toast('Pantalla del proyector conectada'); }
+      else if (d.type === 'estado') { if (!win) win = e.source; if (e.source === win) { const first = !lastEst || performance.now() - lastEst > 2000; est = d; lastEst = performance.now(); if (first) { sendFiles(items); sendConfig(); sendBg(); } updateAir(); } }
+      else if (d.type === 'tecla' && e.source === win) handleKey(d.key);
+      else if (d.type === 'terminado' && e.source === win) {
+        const it = items.find(i => i.id === d.id);
+        if (!it || it.end !== 'siguiente') return;
+        if (sel < items.length) fire(sel);
+        else { fondos('rotar'); toast('Fin del programa: vuelven los fondos'); }
+      }
+    });
+    let lastLive = null;
+    function updateAir() {
+      const conn = $('conn');
+      if (!alive()) { conn.className = 'pill'; conn.textContent = 'Pantalla del proyector cerrada'; }
+      else if (!est.activo) { conn.className = 'pill warn'; conn.textContent = 'Hacé clic una vez en la pantalla del proyector'; }
+      else { conn.className = 'pill ok'; conn.textContent = est.full ? 'Proyector conectado · pantalla completa' : 'Proyector conectado'; }
+      if (!est) return;
+      const it = items.find(i => i.id === est.cueId);
+      let name, sub, t = '—', left = '—', pct = 0;
+      if (est.mode === 'fondos') { name = 'Fondos animados'; sub = `${bgLabel(est.current)}${est.rotar ? ' · rotación automática' : ' · fijo'}`; }
+      else if (est.mode === 'negro') { name = 'Negro'; sub = 'Pantalla en negro'; }
+      else {
+        name = it ? it.label : 'Contenido'; sub = it ? KIND_TXT[it.kind] : '';
+        if (est.kind === 'video' && est.dur) {
+          pct = est.t / est.dur * 100; t = fmt(est.t) + ' / ' + fmt(est.dur); left = '−' + fmt(est.dur - est.t);
+          sub += est.ended ? ' · terminó' : est.paused ? ' · EN PAUSA' : '';
+        }
+      }
+      updateNextChg();
+      $('airName').textContent = name; $('airSub').textContent = sub; if (!seekDrag.air) $('airBar').style.width = pct + '%';
+      $('airSeek').classList.toggle('can', est.mode === 'media' && est.kind === 'video' && est.dur > 0); $('airSeek').setAttribute('aria-valuenow', Math.round(pct));
+      $('airT').textContent = t; $('airLeft').textContent = left;
+      const m = est.mus;
+      $('musName').textContent = m ? m.label + (m.paused ? ' · en pausa' : '') : 'Sin música';
+      const ml = $('musLoop'); ml.classList.toggle('on', !!(m && m.loop)); ml.setAttribute('aria-pressed', !!(m && m.loop));
+      ml.textContent = m && m.loop ? '↻ Repitiendo · R' : 'Repetir · R';
+      if (!seekDrag.mus) $('musBar').style.width = m && m.dur ? (m.t / m.dur * 100) + '%' : '0%';
+      $('musSeek').classList.toggle('can', !!(m && m.dur)); $('musSeek').setAttribute('aria-valuenow', m && m.dur ? Math.round(m.t / m.dur * 100) : 0);
+      $('musT').textContent = m ? fmt(m.t) + ' / ' + fmt(m.dur) : '—';
+      $('musLeft').textContent = m && m.dur ? '−' + fmt(m.dur - m.t) : '—';
+      for (const b of document.querySelectorAll('[data-bg]')) {
+        const k = b.dataset.bg;
+        b.classList.toggle('on', est.mode === 'fondos' ? (k === 'rotar' ? est.rotar : (!est.rotar && k === est.current) || (k === est.current && k === 'historia')) : est.mode === 'negro' && k === 'negro');
+      }
+      if ((est.mode === 'fondos' ? est.current : null) !== bgLive) renderBg();
+      const liveKey = (est.mode === 'media' ? est.cueId : '') + '|' + (m ? m.id : '');
+      if (liveKey !== lastLive) { lastLive = liveKey; render(); }
+    }
+    setInterval(() => { if (!alive()) updateAir(); }, 1000);
+
+    // ----- acciones -----
+    // si el contenido que se cambia está al aire, el cambio se aplica en el momento
+    function pushLive(it, quiet) {
+      const live = est && est.mode === 'media' && est.cueId === it.id;
+      if (live && win && !win.closed) try { win.postMessage({ type: 'cmd', cmd: 'cueUpdate', id: it.id, end: it.end, sound: it.sound, fit: it.fit }, '*'); } catch (e) {}
+      if (live && !quiet) toast('Al terminar: ' + ({ fondos: 'volver a fondos', negro: 'negro', siguiente: 'pasar al siguiente', repetir: 'repetir', congelar: 'quedar en la última imagen' })[it.end]);
+    }
+    function fire(i) {
+      const it = items[i]; if (!it) return;
+      if (it.err) { toast('Ese archivo no se puede reproducir', true); return; }
+      if (!send({ type: 'cmd', cmd: 'cue', cue: { id: it.id, kind: it.kind, sound: it.sound, end: it.end, loop: it.loop, fit: it.fit, label: it.label } })) return;
+      sel = i + 1; render();
+      toast('Al aire: ' + it.label);
+    }
+    function fondos(which) {
+      if (which === 'negro') return send({ type: 'cmd', cmd: 'negro' }) && toast('Negro');
+      if (which === 'rotar' || !which) return send({ type: 'cmd', cmd: 'fondos', which: null, rotar: true }) && toast('Fondos animados');
+      if (which === 'historia') return send({ type: 'cmd', cmd: 'fondos', which }) && toast('Video de la historia');
+      send({ type: 'cmd', cmd: 'fondos', which, rotar: false }) && toast('Fondo fijo: ' + bgLabel(which));
+    }
+    for (const b of document.querySelectorAll('[data-bg]')) b.addEventListener('click', () => fondos(b.dataset.bg));
+    $('musStop').addEventListener('click', () => send({ type: 'cmd', cmd: 'stopMusic' }));
+    function toggleLoop() {
+      const m = est && est.mus;
+      if (!m || !alive()) { toast('No hay música sonando', true); return; }
+      const v = !m.loop;
+      if (send({ type: 'cmd', cmd: 'loopMusic', v })) {
+        m.loop = v; updateAir();
+        const it = items.find(i => i.id === m.id); if (it) { it.loop = v; persist(); render(); }
+        toast(v ? 'La música se va a repetir' : 'La música termina y no se repite');
+      }
+    }
+    $('musLoop').addEventListener('click', toggleLoop);
+    const volIn = $('vol');
+    function setVol(v) {
+      vol = Math.max(0, Math.min(1, Math.round(v * 100) / 100));
+      volIn.value = Math.round(vol * 100); $('volV').textContent = Math.round(vol * 100) + '%';
+      if (win && !win.closed) try { win.postMessage({ type: 'cmd', cmd: 'vol', v: vol }, '*'); } catch (e) {}
+    }
+    volIn.addEventListener('input', () => setVol(volIn.value / 100));
+    volIn.addEventListener('change', () => volIn.blur());
+    // tras un clic con el mouse, soltar el foco para que Espacio siempre lance el siguiente
+    document.addEventListener('click', e => { const b = e.target.closest('button'); if (b && e.detail > 0) b.blur(); });
+
+    function handleKey(key) {
+      const k = key.length === 1 ? key.toLowerCase() : key;
+      if (k === ' ') { if (sel < items.length) fire(sel); else toast('No hay más contenidos en el programa', true); }
+      else if (k === 'ArrowDown') { sel = Math.min(items.length, sel + 1); render(); }
+      else if (k === 'ArrowRight') nudge(5);
+      else if (k === 'ArrowLeft') nudge(-5);
+      else if (k === 'ArrowUp') { sel = Math.max(0, sel - 1); render(); }
+      else if (/^[1-9]$/.test(k)) fire(+k - 1);
+      else if (k === 'f') fondos('rotar');
+      else if (k === 'n') fondos('negro');
+      else if (k === 'p') send({ type: 'cmd', cmd: 'pausa' });
+      else if (k === 'r') toggleLoop();
+      else if (k === 's') { send({ type: 'cmd', cmd: 'stopMusic' }) && toast('Cortando la música'); }
+      else if (k === '+' || k === '=') { setVol(vol + .1); toast('Volumen ' + Math.round(vol * 100) + '%'); }
+      else if (k === '-' || k === '_') { setVol(vol - .1); toast('Volumen ' + Math.round(vol * 100) + '%'); }
+      else return false;
+      return true;
+    }
+    addEventListener('keydown', e => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' && e.target.type !== 'range' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (handleKey(e.key)) e.preventDefault();
+    });
+    addEventListener('beforeunload', e => { if (alive()) { e.preventDefault(); e.returnValue = ''; } });
+    // ----- tiempos de los fondos -----
+    const inFondo = $('inFondo'), inFade = $('inFade');
+    const fmtNum = v => String(Math.round(v * 10) / 10).replace('.', ',');
+    function showConfig() { inFondo.value = saved.config.fondoSeg; inFade.value = saved.config.fadeSeg; }
+    function sendConfig() { if (win && !win.closed) try { win.postMessage({ type: 'cmd', cmd: 'config', fondoSeg: saved.config.fondoSeg, fadeSeg: saved.config.fadeSeg }, '*'); } catch (e) {} }
+    function setTiming(key, v, quiet) {
+      if (!isFinite(v)) { showConfig(); return; }
+      if (key === 'fondoSeg') v = Math.max(5, Math.min(1800, Math.round(v)));
+      else v = Math.max(.2, Math.min(8, Math.round(v * 10) / 10));
+      saved.config[key] = v; persist(); showConfig(); sendConfig();
+      if (!quiet) toast(key === 'fondoSeg' ? 'Cada fondo dura ' + v + ' s' : 'Fundido de ' + fmtNum(v) + ' s');
+    }
+    for (const b of document.querySelectorAll('[data-step]')) b.addEventListener('click', () => {
+      const key = b.dataset.step === 'fondo' ? 'fondoSeg' : 'fadeSeg';
+      setTiming(key, saved.config[key] + parseFloat(b.dataset.d));
+    });
+    inFondo.addEventListener('change', () => { setTiming('fondoSeg', parseFloat(inFondo.value)); inFondo.blur(); });
+    inFade.addEventListener('change', () => { setTiming('fadeSeg', parseFloat(String(inFade.value).replace(',', '.'))); inFade.blur(); });
+    for (const el of [inFondo, inFade]) el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+    function updateNextChg() {
+      const n = $('nextChg');
+      if (!alive() || !est) { n.textContent = 'Se aplica al conectar la pantalla del proyector.'; return; }
+      if (est.mode !== 'fondos') n.textContent = 'Los fondos no están al aire.';
+      else if (!est.rotar) n.textContent = 'Fondo fijo: no cambia solo.';
+      else if (est.current === 'historia') n.textContent = 'Pasando el video de la historia.';
+      else if (est.nextIn != null) n.innerHTML = 'Próximo cambio en <b>' + fmt(est.nextIn) + '</b>';
+      else n.textContent = '—';
+    }
+    showConfig(); updateNextChg();
+    renderBg();
+    wireSeek('airSeek', 'airBar', 'air', 'video', () => (est && est.dur) || 0);
+    wireSeek('musSeek', 'musBar', 'mus', 'music', () => (est && est.mus && est.mus.dur) || 0);
+    render();
+  }
+})();
+</script>
