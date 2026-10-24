@@ -25,8 +25,8 @@ Es un único archivo HTML. No hay que instalar nada y funciona sin internet.
 ## Desarrollo
 
 ```bash
-python3 build.py                   # genera dist/consola-acto.html
-.venv/bin/python tests/smoke.py    # prueba de punta a punta (Playwright + ffmpeg)
+python3 build.py eventos/mi-acto                  # genera dist/<id>.html
+.venv/bin/python tests/smoke.py eventos/mi-acto   # compila y prueba de punta a punta (Playwright + ffmpeg)
 ```
 
 La prueba usa un entorno virtual en `.venv/`. Para crearlo la primera vez:
@@ -39,4 +39,4 @@ python3 -m venv .venv
 
 También hace falta tener `ffmpeg` instalado.
 
-El código está en `src/` y las imágenes y el video en `assets/`. Los detalles de la arquitectura están en `CLAUDE.md`.
+Cada evento es una carpeta con un `evento.json` (título, institución, años, lema y fondos) y sus imágenes y video. El código está en `src/`. Los detalles de la arquitectura están en `CLAUDE.md`.

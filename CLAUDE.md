@@ -4,11 +4,20 @@ Consola para manejar la proyección de un acto escolar con el teclado: una venta
 
 ## Cómo se trabaja
 
-- `python3 build.py` compila todo en `dist/consola-acto.html`: un único archivo autocontenido de unos 6–7 MB que funciona sin internet al abrirlo con doble clic. **Siempre se edita `src/`, nunca `dist/`.**
-- `.venv/bin/python tests/smoke.py` hace una prueba de punta a punta con Playwright. Después de cualquier cambio de comportamiento: compilar, correr la prueba y agregar un caso nuevo si hace falta.
+- `python3 build.py [carpeta del evento]` compila todo en `dist/<id>.html`: un único archivo autocontenido (unos 6–7 MB con el video de Cristo Rey) que funciona sin internet al abrirlo con doble clic. Sin argumento compila `eventos/cristo-rey-70`. **Siempre se edita `src/`, nunca `dist/`.**
+- `.venv/bin/python tests/smoke.py [carpeta del evento]` compila el evento y hace una prueba de punta a punta con Playwright, que también compara los textos y fondos con su `evento.json`. Después de cualquier cambio de comportamiento: compilar, correr la prueba y agregar un caso nuevo si hace falta.
   - Playwright está instalado en el entorno virtual `.venv/` (fuera de git). Para crearlo de cero: `python3 -m venv .venv`, `.venv/bin/pip install playwright` y `.venv/bin/python -m playwright install chromium`. También hace falta `ffmpeg`.
   - El Chromium de Playwright **no reproduce H.264**: los videos de prueba son WebM. El MP4 de la historia no se puede probar ahí, pero en Chrome y Brave anda.
 - Lo usa el autor en **Manjaro con GNOME**, desde Brave o Chrome, con el proyector en modo "Unir pantallas". El código vive en `~/workspace/consola-acto`; el HTML compilado se copia a la carpeta de cada evento.
+
+## Configuración del evento
+
+Cada evento es una carpeta con un `evento.json` y sus imágenes y video. `eventos/` está en `.gitignore`: los archivos son de cada institución. `build.py` valida el JSON (con errores en español), embebe las imágenes y el video, y mete el JSON en `<script type="application/json" id="evento">`. En el navegador queda en `EV`, y `FONDO[tipo]` da cada fondo.
+
+- Campos: `id` (minúsculas y guiones; se usa en el nombre del archivo, la clave de `localStorage` y el nombre de la ventana), `titulo`, `institucion` (obligatorios), y `numero`, `unidad`, `anios`, `lema` (opcionales: si faltan, se ocultan).
+- `fondos`: lista de `{tipo, nombre, imagen | archivo, alt?}`. Tipos: `escudo`, `aniversario`, `logo`, `bordado` y `video` (con `rotulos: [{desde, hasta?, texto, sub?}]`, en segundos; sin `hasta`, el rótulo queda hasta el final).
+- En las escenas, los textos llevan `data-ev="campo"` y los completa `fillEv()`. `data-ev-si` oculta un bloque si el campo está vacío, y `data-tipo` toma el `aria-label` y el `alt` del fondo.
+- Por ahora las escenas son fijas: `escudo`, `logo` y `bordado` son obligatorios, va uno de cada tipo, y las claves internas siguen siendo `escudo`, `historia`, `aniversario`, `logo` y `sokoly`.
 
 ## Arquitectura
 
@@ -47,7 +56,7 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 
 ### Estado guardado
 
-En `localStorage['acto70:programa']`: nombre, sonido, "al terminar", repetición de música y ajuste (`fit`) de cada archivo (por `nombre|tamaño|fecha`), `config` (tiempos de fondos) y `bg` (orden y qué fondos rotan). Los archivos en sí **no** se guardan: el usuario vuelve a elegir la carpeta en cada sesión.
+En `localStorage['consola-acto:<id>']`: nombre, sonido, "al terminar", repetición de música y ajuste (`fit`) de cada archivo (por `nombre|tamaño|fecha`), `config` (tiempos de fondos) y `bg` (orden y qué fondos rotan). Los archivos en sí **no** se guardan: el usuario vuelve a elegir la carpeta en cada sesión.
 
 ### Orden del programa
 
@@ -77,10 +86,9 @@ En `localStorage['acto70:programa']`: nombre, sonido, "al terminar", repetición
 
 ## Qué está atado al acto de los 70 años (para volverlo genérico)
 
-- **Textos** en `src/escenas.html`: nombre de la institución, "70 años", "1956 · 2026", el lema y los rótulos "Los comienzos" / "Nuestro colegio hoy".
-- **Textos** en `src/consola.html`: el título, el encabezado (`c-brand`), el título del proyector, `BUILTIN` (etiquetas de los fondos) y la clave `acto70:programa` de `localStorage`.
-- **Tiempos del video de la historia**: `CONFIG.cambio1956` / `cambio2026`.
-- **Imágenes y video** en `assets/` (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia). **Son de la institución y del grupo de danzas:** antes de publicar el repositorio, confirmar si se pueden subir. Si no, dejarlos fuera de git (`.gitignore`) y agregar imágenes de ejemplo.
+- ~~Textos, títulos, etiquetas de los fondos, clave de `localStorage` y tiempos de los rótulos~~: ya salen de `evento.json` (paso 1).
+- **Colores** fijos en `src/pantalla.css` y `src/dibujo.js` (paso 2).
+- **Imágenes y video** en `eventos/cristo-rey-70/` (escudo, logo de los 70 años, logo del grupo Вільні Соколи y video de la historia). **Son de la institución y del grupo de danzas:** antes de publicar el repositorio, confirmar si se pueden subir. Mientras tanto quedan fuera de git; falta agregar un evento de ejemplo en `ejemplos/generico/` (paso 4).
 - **Fondos animados de diseño propio** (`escudo`, `aniversario`, `logo`, `sokoly`): para hacerlos genéricos, conviene que tomen de configuración el logo, los textos y la paleta, y que la lista `BUILTIN` y las escenas se generen a partir de esa configuración.
 
-Una idea posible es un `evento.json` (nombre, subtítulo, años, lema, colores, logos y qué fondos animados se incluyen) que `build.py` lea para reemplazar marcadores. Así se podría compilar una consola distinta por evento sin tocar el código.
+Plan en curso: 1) `evento.json` + textos (hecho), 2) colores, 3) escenas y `BUILTIN` generadas desde `fondos` (con `rota: false` en lugar de la excepción de `sokoly` en `inRot`), 4) `ejemplos/generico/` como evento por defecto.

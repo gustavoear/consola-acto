@@ -4,8 +4,8 @@ dist/
 # archivos de ejemplo que genera la prueba
 tests/media/
 
-# imágenes y video de la institución: no se publican hasta confirmar el permiso
-assets/
+# eventos reales: sus imágenes y videos son de cada institución y no se publican
+eventos/
 
 # entorno virtual de Python (Playwright)
 .venv/

@@ -1,48 +1,122 @@
 #!/usr/bin/env python3
-"""Compila la consola en un único HTML autocontenido (dist/consola-acto.html).
+"""Compila la consola de un evento en un único HTML autocontenido (dist/<id>.html).
 
-Une src/consola.html con el CSS, las escenas y el dibujo de la pantalla del proyector,
-y embebe las imágenes y el video de assets/ como data URIs, para que el archivo
-funcione sin internet ni archivos sueltos.
+Lee evento.json de la carpeta del evento, une src/consola.html con el CSS, las escenas
+y el dibujo de la pantalla del proyector, embebe la configuración y las imágenes y el
+video del evento como data URIs, para que el archivo funcione sin internet ni archivos sueltos.
 
-Uso:  python3 build.py            -> dist/consola-acto.html
+Uso:  python3 build.py                        -> compila eventos/cristo-rey-70
+      python3 build.py ruta/a/la/carpeta      -> dist/<id>.html
 """
 import base64
+import html
+import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
-SRC, ASSETS, DIST = ROOT / 'src', ROOT / 'assets', ROOT / 'dist'
+SRC, DIST = ROOT / 'src', ROOT / 'dist'
+POR_DEFECTO = ROOT / 'eventos' / 'cristo-rey-70'
 
-# marcador en el código  ->  (archivo en assets/, tipo MIME)
-IMAGENES = {
-    '__ESCUDO__': ('escudo.png', 'image/png'),
-    '__LOGO70__': ('logo70.png', 'image/png'),
-    '__SOKOLY__': ('sokoly.webp', 'image/webp'),
-}
-VIDEO = 'historia.mp4'
+# tipo de fondo  ->  marcador de su imagen en src/escenas.html
+IMAGENES = {'escudo': '__ESCUDO__', 'logo': '__LOGO__', 'bordado': '__BORDADO__'}
+TIPOS = set(IMAGENES) | {'aniversario', 'video'}
+MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
+        '.svg': 'image/svg+xml', '.gif': 'image/gif', '.avif': 'image/avif',
+        '.mp4': 'video/mp4', '.webm': 'video/webm', '.m4v': 'video/mp4'}
+TEXTOS = ('titulo', 'institucion', 'numero', 'unidad', 'anios', 'lema')
+
+
+class ErrorEvento(Exception):
+    pass
 
 
 def b64(path: pathlib.Path) -> str:
     return base64.b64encode(path.read_bytes()).decode()
 
 
+def archivo(carpeta: pathlib.Path, nombre, donde: str) -> pathlib.Path:
+    if not isinstance(nombre, str) or not nombre:
+        raise ErrorEvento(f'{donde}: falta el nombre del archivo')
+    f = carpeta / nombre
+    if not f.is_file():
+        raise ErrorEvento(f'{donde}: no encuentro {f.relative_to(ROOT) if f.is_relative_to(ROOT) else f}')
+    if f.suffix.lower() not in MIME:
+        raise ErrorEvento(f'{donde}: no conozco el formato de {nombre}')
+    return f
+
+
+def leer_evento(carpeta: pathlib.Path) -> dict:
+    j = carpeta / 'evento.json'
+    if not j.is_file():
+        raise ErrorEvento(f'No encuentro {j}')
+    try:
+        ev = json.loads(j.read_text(encoding='utf-8'))
+    except json.JSONDecodeError as e:
+        raise ErrorEvento(f'{j.name} tiene un error en la línea {e.lineno}: {e.msg}')
+    if not isinstance(ev, dict):
+        raise ErrorEvento(f'{j.name} tiene que ser un objeto {{…}}')
+    for k in ('id', 'titulo', 'institucion'):
+        if not isinstance(ev.get(k), str) or not ev[k].strip():
+            raise ErrorEvento(f'Falta el campo "{k}" en {j.name}')
+    if not re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', ev['id']):
+        raise ErrorEvento(f'"id" solo puede tener minúsculas, números y guiones (por ejemplo "escuela-50"), no "{ev["id"]}"')
+    for k in TEXTOS:
+        if not isinstance(ev.get(k, ''), str):
+            raise ErrorEvento(f'El campo "{k}" tiene que ser un texto')
+    fondos = ev.get('fondos')
+    if not isinstance(fondos, list) or not fondos:
+        raise ErrorEvento(f'Falta la lista "fondos" en {j.name}')
+    vistos = set()
+    for i, f in enumerate(fondos, 1):
+        donde = f'fondos[{i}]'
+        if not isinstance(f, dict) or f.get('tipo') not in TIPOS:
+            raise ErrorEvento(f'{donde}: "tipo" tiene que ser uno de {", ".join(sorted(TIPOS))}')
+        if f['tipo'] in vistos:
+            raise ErrorEvento(f'{donde}: el tipo "{f["tipo"]}" está repetido (por ahora va uno de cada uno)')
+        vistos.add(f['tipo'])
+        if not isinstance(f.get('nombre'), str) or not f['nombre'].strip():
+            raise ErrorEvento(f'{donde}: falta "nombre"')
+        if f['tipo'] in IMAGENES:
+            archivo(carpeta, f.get('imagen'), donde)
+        if f['tipo'] == 'video':
+            archivo(carpeta, f.get('archivo'), donde)
+            for r in f.setdefault('rotulos', []):
+                if not isinstance(r, dict) or not isinstance(r.get('desde'), (int, float)) or not isinstance(r.get('texto'), str):
+                    raise ErrorEvento(f'{donde}: cada rótulo necesita "desde" (segundos) y "texto"')
+    falta = set(IMAGENES) - vistos
+    if falta:  # las escenas todavía son fijas: hasta que se generen desde la configuración, van todas
+        raise ErrorEvento(f'Por ahora tienen que estar los fondos de tipo: {", ".join(sorted(falta))}')
+    return ev
+
+
 def main() -> int:
+    carpeta = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else POR_DEFECTO
+    try:
+        ev = leer_evento(carpeta)
+    except ErrorEvento as e:
+        print(f'Error: {e}', file=sys.stderr)
+        return 1
+
     s = (SRC / 'consola.html').read_text(encoding='utf-8')
     s = s.replace('/*CSS_PANTALLA*/', (SRC / 'pantalla.css').read_text(encoding='utf-8'))
     s = s.replace('<!--ESCENAS-->', (SRC / 'escenas.html').read_text(encoding='utf-8'))
     s = s.replace('/*DIBUJO*/', (SRC / 'dibujo.js').read_text(encoding='utf-8'))
+    s = s.replace('__TITULO__', html.escape('Consola · ' + ev['titulo']))
 
-    for marca, (nombre, mime) in IMAGENES.items():
-        f = ASSETS / nombre
-        if not f.exists():
-            print(f'Falta {f}', file=sys.stderr)
-            return 1
-        s = s.replace(marca, f'data:{mime};base64,{b64(f)}')
+    fondos = {f['tipo']: f for f in ev['fondos']}
+    for tipo, marca in IMAGENES.items():
+        f = carpeta / fondos[tipo]['imagen']
+        s = s.replace(marca, f'data:{MIME[f.suffix.lower()]};base64,{b64(f)}')
 
-    video = ASSETS / VIDEO
-    datos = f'<script type="text/plain" id="vid64">{b64(video)}</script>' if video.exists() else ''
+    datos = ''
+    if 'video' in fondos:
+        v = carpeta / fondos['video']['archivo']
+        datos = f'<script type="text/plain" id="vid64" data-mime="{MIME[v.suffix.lower()]}">{b64(v)}</script>'
     s = s.replace('__VIDEO_DATA__', datos)
+    # "</" escapado para que un texto del evento no pueda cerrar el <script>
+    s = s.replace('__EVENTO__', json.dumps(ev, ensure_ascii=False).replace('</', '<\\/'))
 
     # el <body> se abre después de los estilos para que el HTML sea válido al abrirlo desde el disco
     a = '</style>\n\n<template id="tplPantalla">'
@@ -54,7 +128,7 @@ def main() -> int:
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n')
 
     DIST.mkdir(exist_ok=True)
-    out = DIST / 'consola-acto.html'
+    out = DIST / f'{ev["id"]}.html'
     out.write_text(head + s + '\n</body>\n</html>\n', encoding='utf-8')
     print(f'Listo: {out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.1f} MB)')
     return 0

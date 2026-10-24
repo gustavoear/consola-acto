@@ -1,4 +1,4 @@
-<title>Consola del Acto 70 Años</title>
+<title>__TITULO__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
 <style>
@@ -45,7 +45,7 @@ body.consola [hidden] { display: none !important; }
 body.consola *, body.consola *::before, body.consola *::after { box-sizing: border-box; }
 .c-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 4px 12px; border-bottom: 1px solid var(--c-line); }
 .c-brand { font-family: var(--display); font-weight: 700; letter-spacing: .06em; font-size: 18px; color: var(--c-gold); margin: 0; margin-right: auto; }
-.c-brand span { color: var(--c-mute); font-family: var(--ui); font-weight: 500; letter-spacing: 0; font-size: 13px; margin-left: 8px; }
+.c-brand span:not(.c-title) { color: var(--c-mute); font-family: var(--ui); font-weight: 500; letter-spacing: 0; font-size: 13px; margin-left: 8px; }
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--c-raise);
   border: 1px solid var(--c-line); font-weight: 600; font-size: 13px; }
 .pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c-mute); }
@@ -178,7 +178,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 
 <template id="tplConsola">
 <header class="c-top">
-  <h1 class="c-brand">Consola del acto <span>70 años · Instituto Superior Cristo Rey</span></h1>
+  <h1 class="c-brand"><span class="c-title" data-ev="titulo"></span> <span data-ev="institucion"></span></h1>
   <span class="pill" id="conn">Pantalla del proyector cerrada</span>
   <button class="btn prim" id="abrir" type="button">Abrir pantalla del proyector</button>
 </header>
@@ -264,9 +264,23 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 <div class="c-toast" id="toast" role="status"></div>
 </template>
 __VIDEO_DATA__
+<script type="application/json" id="evento">__EVENTO__</script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
+  // configuración del evento (evento.json), embebida por build.py
+  const EV = JSON.parse($('evento').textContent);
+  const FONDO = Object.fromEntries(EV.fondos.map(f => [f.tipo, f]));
+  // completa los textos marcados con data-ev; los que quedan vacíos se ocultan
+  function fillEv(root) {
+    for (const el of root.querySelectorAll('[data-ev]')) { el.textContent = EV[el.dataset.ev] || ''; el.hidden = !EV[el.dataset.ev]; }
+    for (const el of root.querySelectorAll('[data-ev-si]')) el.hidden = !EV[el.dataset.evSi];
+    for (const el of root.querySelectorAll('[data-tipo]')) {
+      const f = FONDO[el.dataset.tipo]; if (!f) continue;
+      el.setAttribute('aria-label', f.nombre);
+      const im = el.querySelector('img'); if (im) im.alt = f.alt || f.nombre;
+    }
+  }
   const MODO_PANTALLA = location.hash === '#pantalla';
   if (MODO_PANTALLA) pantalla(); else consola();
 
@@ -275,18 +289,26 @@ __VIDEO_DATA__
   // =====================================================================
   function pantalla() {
     document.body.className = 'pantalla';
-    document.title = 'Proyector · Acto 70 Años';
+    document.title = 'Proyector · ' + EV.titulo;
     document.body.appendChild($('tplPantalla').content.cloneNode(true));
-    const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3, cambio1956: 2.2, cambio2026: 2.9 };
+    fillEv(document.body);
+    const CONFIG = { fondoSeg: 60, fadeSeg: 1.8, pausaFinalSeg: 3 };
     // rotación: claves de fondos propios (escudo, logo…) o 'u:<id>' para imágenes y videos agregados
     let rot = ['escudo', 'historia', 'aniversario', 'logo'], bgKinds = {}, curKey = null, uSlot = 'u2';
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const vid = $('vid'), y1 = $('y1'), y2 = $('y2'), mus = $('mus');
+    const vid = $('vid'), mus = $('mus');
+    // rótulos del video: se muestran entre "desde" y "hasta"; sin "hasta", quedan hasta el final
+    const rotulos = ((FONDO.video || {}).rotulos || []).map(r => {
+      const el = document.createElement('div'); el.className = 'yr txt'; el.textContent = r.texto;
+      if (r.sub) { const sm = document.createElement('small'); sm.textContent = r.sub; el.appendChild(sm); }
+      $('sV').appendChild(el);
+      return { el, desde: r.desde, hasta: r.hasta };
+    });
     const emb = $('vid64');
     if (emb) {
       const bin = atob(emb.textContent.trim()), buf = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      vid.src = URL.createObjectURL(new Blob([buf], { type: 'video/mp4' }));
+      vid.src = URL.createObjectURL(new Blob([buf], { type: emb.dataset.mime || 'video/mp4' }));
       emb.remove();
     }
 
@@ -402,7 +424,7 @@ __VIDEO_DATA__
       else if (mode === 'fondos' && rotar && !nextAt && current !== 'historia') schedule();
     }
     function playHistoria() {
-      hEnded = false; y1.classList.remove('show'); y2.classList.remove('show');
+      hEnded = false; for (const r of rotulos) r.el.classList.remove('show');
       vid.classList.remove('zoom'); void vid.offsetWidth; if (!reduce) vid.classList.add('zoom');
       vid.muted = true;
       try { vid.currentTime = 0; } catch (e) {}
@@ -542,8 +564,7 @@ __VIDEO_DATA__
       for (const [k, s] of Object.entries(scenes)) if (s.draw && (k === current || now < s.until)) s.draw(t);
       if (current === 'historia') {
         const ct = vid.currentTime;
-        y1.classList.toggle('show', !hEnded && ct > .3 && ct < CONFIG.cambio1956);
-        y2.classList.toggle('show', ct > CONFIG.cambio2026 || hEnded);
+        for (const r of rotulos) r.el.classList.toggle('show', r.hasta == null ? ct > r.desde || hEnded : !hEnded && ct > r.desde && ct < r.hasta);
       }
       requestAnimationFrame(frame);
     })();
@@ -557,8 +578,9 @@ __VIDEO_DATA__
   function consola() {
     document.body.className = 'consola';
     document.body.appendChild($('tplConsola').content.cloneNode(true));
+    fillEv(document.body);
     const emb = $('vid64'); if (emb) emb.remove();
-    const KEY = 'acto70:programa';
+    const KEY = 'consola-acto:' + EV.id;
     const VIDEO_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)$/i, IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)$/i, AUD_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i;
     let items = [], sel = 0, win = null, est = null, lastEst = 0, vol = 1;
     let saved = {};
@@ -651,12 +673,12 @@ __VIDEO_DATA__
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const tplP = $('tplPantalla').content;
     const BUILTIN = [
-      { key: 'escudo', label: 'Escudo', src: '#crest', bgc: '#0b1d36' },
-      { key: 'historia', label: 'Video de la historia', txt: '1956', bgc: '#4a3a28' },
-      { key: 'aniversario', label: 'Aniversario', txt: '70', bgc: '#13254f' },
-      { key: 'logo', label: 'Logo 70 años', src: '#logo70', bgc: '#eef3ff' },
-      { key: 'sokoly', label: 'Вільні Соколи', src: '#sokoly', bgc: '#0a1a4a' }
-    ].map(b => ({ ...b, builtin: true }));
+      { key: 'escudo', tipo: 'escudo', src: '#crest', bgc: '#0b1d36' },
+      { key: 'historia', tipo: 'video', txt: ((FONDO.video || {}).rotulos || [{}])[0].texto || '▶', bgc: '#4a3a28' },
+      { key: 'aniversario', tipo: 'aniversario', txt: EV.numero || '★', bgc: '#13254f' },
+      { key: 'logo', tipo: 'logo', src: '#logo70', bgc: '#eef3ff' },
+      { key: 'sokoly', tipo: 'bordado', src: '#sokoly', bgc: '#0a1a4a' }
+    ].filter(b => FONDO[b.tipo]).map(b => ({ ...b, label: FONDO[b.tipo].nombre, builtin: true }));
     // miniaturas chicas de los logos, para no repetir imágenes pesadas en la lista
     for (const b of BUILTIN) if (b.src) {
       const el = tplP.querySelector(b.src), im = new Image();
@@ -870,7 +892,7 @@ __VIDEO_DATA__
     $('abrir').addEventListener('click', () => {
       if (alive()) { toast('La pantalla ya está abierta'); return; }
       const url = location.href.split('#')[0] + '#pantalla';
-      let w = window.open('', 'pantalla70', 'popup,width=1280,height=720');
+      let w = window.open('', 'pantalla-' + EV.id, 'popup,width=1280,height=720');
       if (!w) { toast('El navegador bloqueó la ventana: permití ventanas emergentes', true); return; }
       let blank = false; try { blank = w.location.href === 'about:blank'; } catch (e) {}
       if (blank) w.location.href = url; else try { w.postMessage({ type: 'files', items: [] }, '*'); } catch (e) {}
@@ -946,7 +968,7 @@ __VIDEO_DATA__
     function fondos(which) {
       if (which === 'negro') return send({ type: 'cmd', cmd: 'negro' }) && toast('Negro');
       if (which === 'rotar' || !which) return send({ type: 'cmd', cmd: 'fondos', which: null, rotar: true }) && toast('Fondos animados');
-      if (which === 'historia') return send({ type: 'cmd', cmd: 'fondos', which }) && toast('Video de la historia');
+      if (which === 'historia') return send({ type: 'cmd', cmd: 'fondos', which }) && toast(bgLabel(which));
       send({ type: 'cmd', cmd: 'fondos', which, rotar: false }) && toast('Fondo fijo: ' + bgLabel(which));
     }
     for (const b of document.querySelectorAll('[data-bg]')) b.addEventListener('click', () => fondos(b.dataset.bg));
@@ -1022,7 +1044,7 @@ __VIDEO_DATA__
       if (!alive() || !est) { n.textContent = 'Se aplica al conectar la pantalla del proyector.'; return; }
       if (est.mode !== 'fondos') n.textContent = 'Los fondos no están al aire.';
       else if (!est.rotar) n.textContent = 'Fondo fijo: no cambia solo.';
-      else if (est.current === 'historia') n.textContent = 'Pasando el video de la historia.';
+      else if (est.current === 'historia') n.textContent = 'Pasando: ' + bgLabel('historia') + '.';
       else if (est.nextIn != null) n.innerHTML = 'Próximo cambio en <b>' + fmt(est.nextIn) + '</b>';
       else n.textContent = '—';
     }
