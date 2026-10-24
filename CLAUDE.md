@@ -14,7 +14,8 @@ Consola para manejar la proyección de un acto escolar con el teclado: una venta
 
 - Licencia **MIT**, a nombre de Gustavo Earnshaw (`LICENSE`). Como el HTML compilado se comparte solo, `build.py` copia la licencia completa en un comentario al principio del archivo.
 - En la consola, el panel **"Acerca de"** (un `<details>` al final de la columna lateral) muestra el autor, el origen (el acto de los 70 años del Instituto Superior Cristo Rey), que se desarrolló con ayuda de Claude y un resumen de la licencia.
-- El link al repositorio sale de la constante `REPO` de `build.py`, que reemplaza el bloque `<!--REPO-->…<!--/REPO-->`. **Mientras esté vacía, la línea no aparece**: completarla cuando exista el repositorio en GitHub.
+- El link al repositorio sale de la constante `REPO` de `build.py`, que reemplaza el bloque `<!--REPO-->…<!--/REPO-->`. Si se deja vacía, la línea no aparece.
+- Se publica en https://github.com/gustavoear/consola-acto. Cada versión es una **Release** con `consola-acto.html` adjunto (`dist/` no va en git): compilar, probar, crear el tag `vX.Y.Z` y `gh release create`.
 
 ## Arquitectura
 

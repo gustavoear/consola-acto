@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent
 SRC, DIST = ROOT / 'src', ROOT / 'dist'
 SALIDA = DIST / 'consola-acto.html'
 # dirección del repositorio, para los créditos; mientras esté vacía, el link no aparece
-REPO = ''
+REPO = 'https://github.com/gustavoear/consola-acto'
 
 
 def main() -> int:

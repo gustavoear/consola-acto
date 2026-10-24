@@ -17,7 +17,7 @@ Es un único archivo, `consola-acto.html`. No hay que instalar nada y funciona s
 
 ## Uso
 
-1. Conseguí `consola-acto.html` (o generalo con `python3 build.py`, ver [Desarrollo](#desarrollo)) y guardalo junto a la carpeta del acto.
+1. Descargá `consola-acto.html` de la [última versión](https://github.com/gustavoear/consola-acto/releases/latest) y guardalo junto a la carpeta del acto.
 2. En la configuración de pantallas, elegí **Unir** (no "Duplicar").
 3. Abrí `consola-acto.html` en Chrome, Brave o Edge.
 4. Elegí la carpeta del acto y, si querés, cargá los fondos en el panel **Fondos**.
