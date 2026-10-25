@@ -121,10 +121,30 @@ def main() -> int:
         c.locator('.bgrow', has_text='Foto').locator('.bgname').click(); p.wait_for_timeout(1500)
         check('fondo agregado fijo', c.inner_text('#airSub'), 'Foto · fijo')
 
+        # memoria: al volver a abrir la consola está todo como se dejó (orden manual, ajustes y fondos)
+        c.locator('.c-row').nth(2).locator('[data-act="up"]').click(); c.wait_for_timeout(500)
+        c2 = ctx.new_page(); c2.on('pageerror', lambda e: errores.append('consola reabierta: ' + str(e)))
+        c2.goto(dist.as_uri()); c2.wait_for_timeout(1500)
+        check('reabrir: programa en el mismo orden', str(c2.eval_on_selector_all('.c-row .fname', 'els => els.map(e => e.textContent)')),
+              "['01 Danza.webm', '03 Musica.ogg', '02 Foto.jpg']")
+        check('reabrir: ajustes', c2.locator('.c-row').first.locator('select[data-act="end"]').input_value(), 'repetir')
+        check('reabrir: fondos', str(c2.eval_on_selector_all('#bgList .bgname b', 'els => els.map(e => e.textContent)')), "['Danza', 'Foto']")
+        check('reabrir: aviso', c2.inner_text('#toast'), 'Se recuperó lo que habías cargado')
+        c2.close()
+
         # al quitarlos (con confirmación), vuelve a negro
         c.click('#bgVaciar'); c.click('#bgVaciar'); p.wait_for_timeout(1500)
         check('quitar fondos: al aire', c.inner_text('#airSub'), 'Sin fondos cargados')
         check('quitar fondos: pantalla en negro', p.eval_on_selector('section.scene.on', 'e => e.id'), 'sN')
+
+        # al vaciar todo se borran las copias guardadas, y al reabrir la consola está vacía
+        copias = "new Promise(ok => { const r = indexedDB.open('consola-acto'); r.onsuccess = () => { const q = r.result.transaction('archivos').objectStore('archivos').count(); q.onsuccess = () => ok(q.result); }; })"
+        check('copias guardadas: solo las del programa', str(c.evaluate(copias)), '3')
+        c.click('#vaciar'); c.click('#vaciar'); c.wait_for_timeout(800)
+        check('vaciar: se borran las copias', str(c.evaluate(copias)), '0')
+        c2 = ctx.new_page(); c2.goto(dist.as_uri()); c2.wait_for_timeout(1200)
+        check('reabrir vacía', c2.inner_text('#list'), 'Todavía no hay contenidos')
+        c2.close()
 
         b.close()
 

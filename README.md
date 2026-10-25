@@ -13,7 +13,7 @@ Es un único archivo, `consola-acto.html`. No hay que instalar nada y funciona s
 - **Música independiente de la imagen**, con opción de repetir (**R**) y corte con fundido (**S**).
 - **Fondos en rotación.** Cargás imágenes o videos (el escudo, el logo, una animación) que se muestran entre contenido y contenido, con tiempos ajustables. Podés dejar uno fijo o sacarlo de la rotación. Mientras no cargues ninguno, la pantalla queda en negro.
 - **Negro** con la tecla **N**, **pausa** con **P** y **volumen** con **+ / −**.
-- Los ajustes de cada archivo y de los fondos se recuerdan en la computadora.
+- **Recuerda todo.** Lo que cargás y ajustás queda guardado en el navegador: al volver a abrir la consola, el programa, los fondos y sus ajustes están como los dejaste, sin elegir nada de nuevo. Para empezar otro acto, usá "Vaciar programa" y "Quitar agregados".
 
 ## Uso
 

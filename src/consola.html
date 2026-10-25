@@ -213,7 +213,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
         <label class="btn" for="inFiles">Agregar archivos<input type="file" id="inFiles" multiple accept="video/*,image/*,audio/*,.mkv,.mov"></label>
         <button class="btn" id="vaciar" type="button">Vaciar programa</button>
       </div>
-      <p class="help">El orden inicial sigue el nombre de los archivos: nombralos <b>01 Bienvenida.mp4</b>, <b>02 Danza folklórica.mp4</b>… Al elegir la carpeta, el programa se arma de nuevo en el orden de los nombres. Los ajustes de cada archivo se recuerdan en esta computadora.</p>
+      <p class="help">El orden inicial sigue el nombre de los archivos: nombralos <b>01 Bienvenida.mp4</b>, <b>02 Danza folklórica.mp4</b>… Al elegir la carpeta, el programa se arma de nuevo en el orden de los nombres. Todo lo que cargás y ajustás queda guardado en este navegador: al volver a abrir la consola, está como lo dejaste.</p>
       <div class="drop" id="drop">También podés arrastrar archivos acá.</div>
       <div class="list" id="list"></div>
     </section>
@@ -518,7 +518,6 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
   function consola() {
     document.body.className = 'consola';
     document.body.appendChild($('tplConsola').content.cloneNode(true));
-    for (const emb of document.querySelectorAll('script.vid64')) emb.remove();
     const KEY = 'consola-acto:programa';
     const VIDEO_EXT = /\.(mp4|webm|mov|m4v|mkv|ogv)$/i, IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)$/i, AUD_EXT = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i;
     let items = [], sel = 0, win = null, est = null, lastEst = 0, vol = 1;
@@ -526,8 +525,10 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
     saved.items = saved.items || {}; saved.order = saved.order || [];
     saved.config = Object.assign({ fondoSeg: 60, fadeSeg: 1.8 }, saved.config || {});
+    // además de los ajustes, se guarda qué hay cargado (order: programa, fondos: fondos agregados) para recuperarlo al volver a abrir
     const persist = () => {
       saved.order = items.map(i => i.id);
+      saved.fondos = bgUser.map(u => u.id);
       for (const i of items) saved.items[i.id] = { label: i.label, sound: i.sound, end: i.end, loop: i.loop, fit: i.fit };
       try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
     };
@@ -545,6 +546,48 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     const cleanName = n => n.replace(/\.[^.]+$/, '').replace(/^\s*\d+\s*[-_.)]*\s*/, '').replace(/[_]+/g, ' ').trim() || n;
     const KIND_TXT = { video: 'Video', image: 'Imagen', audio: 'Música' };
 
+    // ----- memoria: copia de los archivos cargados en el navegador (IndexedDB) -----
+    // Así, al volver a abrir la consola, el programa y los fondos están como se dejaron, sin elegir nada.
+    // Cada archivo se guarda una vez por su firma, aunque esté en el programa y en los fondos.
+    const firma = f => f.name + '|' + f.size + '|' + f.lastModified;
+    let base = null;
+    const abrirBase = () => base || (base = new Promise((ok, mal) => {
+      const r = indexedDB.open('consola-acto', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('archivos');
+      r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
+    }));
+    // fn recibe el almacén dentro de una transacción; la promesa se resuelve cuando la transacción termina
+    const transaccion = (modo, fn) => abrirBase().then(db => new Promise((ok, mal) => {
+      const t = db.transaction('archivos', modo), salida = fn(t.objectStore('archivos'));
+      t.oncomplete = () => ok(salida); t.onerror = t.onabort = () => mal(t.error);
+    }));
+    const recordar = list => transaccion('readwrite', st => { for (const x of list) st.put(x.file, firma(x.file)); })
+      .catch(() => toast('No hay lugar en el navegador para recordar todos los archivos: la próxima vez vas a tener que cargar algunos de nuevo', true));
+    // borra las copias que ya no usan ni el programa ni los fondos
+    const olvidar = () => transaccion('readwrite', st => {
+      const enUso = new Set([...items, ...bgUser].map(x => firma(x.file))), r = st.getAllKeys();
+      r.onsuccess = () => { for (const k of r.result) if (!enUso.has(k)) st.delete(k); };
+    }).catch(() => {});
+    // al abrir la consola: vuelve a armar el programa y los fondos que había, en el mismo orden
+    function recuperar() {
+      const prog = saved.order || [], fon = saved.fondos || [];
+      if (!prog.length && !fon.length) return;
+      transaccion('readonly', st => {
+        const ks = st.getAllKeys(), vs = st.getAll(), m = new Map();
+        vs.onsuccess = () => ks.result.forEach((k, i) => m.set(k, vs.result[i]));
+        return m;
+      }).then(m => {
+        if (items.length || bgUser.length) return;   // ya se cargó otra cosa mientras tanto
+        items = prog.map(id => m.get(id)).filter(Boolean).map(nuevoItem).filter(Boolean);
+        bgUser = fon.map(id => m.get(id.replace(/^bg\|/, ''))).filter(Boolean).map(nuevoFondo).filter(Boolean);
+        for (const it of items) analyze(it);
+        for (const u of bgUser) analyze(u, () => renderBg());
+        const perdidos = prog.length + fon.length - items.length - bgUser.length;
+        persist(); render(); renderBg(); sendFiles(items); sendBg();
+        if (items.length || bgUser.length) toast('Se recuperó lo que habías cargado' + (perdidos ? ` (${perdidos} ${perdidos === 1 ? 'archivo ya no estaba' : 'archivos ya no estaban'})` : ''), perdidos > 0);
+      }).catch(() => {});
+    }
+
     // ----- carga de archivos -----
     // replace = true (Elegir carpeta): la carpeta reemplaza el programa y el orden es el de los nombres de archivo
     function addFiles(list, replace) {
@@ -552,19 +595,22 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       const nuevos = [...list].filter(f => kindOf(f));
       if (replace && nuevos.length) { items = []; sel = 0; }
       for (const f of list) {
-        const kind = kindOf(f); if (!kind) continue;
-        const id = f.name + '|' + f.size + '|' + f.lastModified;
-        if (items.some(i => i.id === id)) continue;
-        const s = saved.items[id] || {};
-        fresh.push({ id, file: f, kind, name: f.name, label: s.label || cleanName(f.name),
-          sound: s.sound !== undefined ? s.sound : true, end: s.end || 'fondos', loop: !!s.loop, fit: s.fit || 'entera', dur: 0, thumb: '' });
+        const it = nuevoItem(f);
+        if (it && !items.some(i => i.id === it.id)) fresh.push(it);
       }
       if (!fresh.length) { toast('No encontré videos, imágenes ni música nuevos', true); return; }
       fresh.sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
       items = items.concat(fresh);
       for (const it of fresh) analyze(it);
-      persist(); sendFiles(fresh); render();
+      persist(); recordar(fresh); if (replace) olvidar(); sendFiles(fresh); render();
       toast(replace ? 'Programa cargado: ' + fresh.length + ' contenidos, en el orden de los nombres' : fresh.length + (fresh.length === 1 ? ' contenido agregado' : ' contenidos agregados'));
+    }
+    // contenido del programa a partir de un archivo, con los ajustes que tenía guardados
+    function nuevoItem(f) {
+      const kind = kindOf(f); if (!kind) return null;
+      const id = firma(f), s = saved.items[id] || {};
+      return { id, file: f, kind, name: f.name, label: s.label || cleanName(f.name),
+        sound: s.sound !== undefined ? s.sound : true, end: s.end || 'fondos', loop: !!s.loop, fit: s.fit || 'entera', dur: 0, thumb: '' };
     }
     function analyze(it, upd) {
       upd = upd || renderRow;
@@ -603,7 +649,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       if (e.dataTransfer.files.length) bg ? addBg(e.dataTransfer.files) : addFiles(e.dataTransfer.files);
     });
     $('vaciar').addEventListener('click', () => {
-      if ($('vaciar').dataset.sure) { items = []; sel = 0; delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; render(); return; }
+      if ($('vaciar').dataset.sure) { items = []; sel = 0; delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; persist(); olvidar(); render(); return; }
       $('vaciar').dataset.sure = '1'; $('vaciar').textContent = '¿Seguro? Clic de nuevo';
       setTimeout(() => { if ($('vaciar').dataset.sure) { delete $('vaciar').dataset.sure; $('vaciar').textContent = 'Vaciar programa'; } }, 3000);
     });
@@ -624,20 +670,23 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       const kinds = {}; for (const u of bgUser) if (!u.err) kinds[u.id] = u.kind;
       try { win.postMessage({ type: 'cmd', cmd: 'bgList', rot: bgEntries().filter(e => inRot(e.key) && !e.err).map(e => e.key), kinds }, '*'); } catch (e) {}
     }
+    function nuevoFondo(f) {
+      const kind = kindOf(f);
+      if (kind !== 'image' && kind !== 'video') return null;
+      const id = 'bg|' + firma(f);
+      return { id, key: 'u:' + id, file: f, kind, name: f.name, label: cleanName(f.name), thumb: '', dur: 0, bgc: '#000' };
+    }
     function addBg(list) {
       const fresh = [];
       for (const f of list) {
-        const kind = kindOf(f);
-        if (kind !== 'image' && kind !== 'video') continue;
-        const id = 'bg|' + f.name + '|' + f.size + '|' + f.lastModified;
-        if (bgUser.some(u => u.id === id)) continue;
-        fresh.push({ id, key: 'u:' + id, file: f, kind, name: f.name, label: cleanName(f.name), thumb: '', dur: 0, bgc: '#000' });
+        const u = nuevoFondo(f);
+        if (u && !bgUser.some(x => x.id === u.id)) fresh.push(u);
       }
       if (!fresh.length) { toast('No encontré imágenes ni videos nuevos para fondos', true); return; }
       fresh.sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
       bgUser = bgUser.concat(fresh);
       for (const u of fresh) analyze(u, () => renderBg());
-      renderBg(); sendBg();
+      persist(); recordar(fresh); renderBg(); sendBg();
       toast(fresh.length + (fresh.length === 1 ? ' fondo agregado a la rotación' : ' fondos agregados a la rotación'));
     }
     $('bgDir').addEventListener('change', e => { addBg(e.target.files); e.target.value = ''; });
@@ -645,7 +694,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     $('bgVaciar').addEventListener('click', () => {
       const b = $('bgVaciar');
       if (!bgUser.length) { toast('No hay fondos agregados'); return; }
-      if (b.dataset.sure) { bgUser = []; delete b.dataset.sure; b.textContent = 'Quitar agregados'; renderBg(); sendBg(); toast('Se quitaron los fondos agregados'); return; }
+      if (b.dataset.sure) { bgUser = []; delete b.dataset.sure; b.textContent = 'Quitar agregados'; persist(); olvidar(); renderBg(); sendBg(); toast('Se quitaron los fondos agregados'); return; }
       b.dataset.sure = '1'; b.textContent = '¿Seguro? Clic de nuevo';
       setTimeout(() => { if (b.dataset.sure) { delete b.dataset.sure; b.textContent = 'Quitar agregados'; } }, 3000);
     });
@@ -684,7 +733,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
         const keys = list.map(x => x.key); [keys[i], keys[j]] = [keys[j], keys[i]];
         saved.bg.order = keys; persist(); renderBg(); sendBg(); return;
       }
-      if (act === 'del') { bgUser = bgUser.filter(u => u.key !== key); renderBg(); sendBg(); toast('Fondo quitado: ' + ent.label); }
+      if (act === 'del') { bgUser = bgUser.filter(u => u.key !== key); persist(); olvidar(); renderBg(); sendBg(); toast('Fondo quitado: ' + ent.label); }
     });
 
     // ----- lista del programa -----
@@ -751,7 +800,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       if (act === 'go') return fire(i);
       if (act === 'up' && i > 0) { [items[i - 1], items[i]] = [items[i], items[i - 1]]; if (sel === i) sel--; else if (sel === i - 1) sel++; persist(); return render(); }
       if (act === 'down' && i < items.length - 1) { [items[i + 1], items[i]] = [items[i], items[i + 1]]; if (sel === i) sel++; else if (sel === i + 1) sel--; persist(); return render(); }
-      if (act === 'del') { items.splice(i, 1); if (sel > i) sel--; sel = Math.min(sel, items.length); persist(); return render(); }
+      if (act === 'del') { items.splice(i, 1); if (sel > i) sel--; sel = Math.min(sel, items.length); persist(); olvidar(); return render(); }
       if (act === 'sound') { it.sound = !it.sound; persist(); pushLive(it, true); toast(it.sound ? 'Con sonido' : 'Sin sonido'); return render(); }
       if (act === 'fit') { it.fit = it.fit === 'llenar' ? 'entera' : 'llenar'; persist(); pushLive(it, true); toast(it.fit === 'llenar' ? 'Llenar pantalla: recorta los bordes' : 'Entera: se ve completa'); return render(); }
       if (act === 'loop') {
@@ -971,6 +1020,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     wireSeek('airSeek', 'airBar', 'air', 'video', () => (est && est.dur) || 0);
     wireSeek('musSeek', 'musBar', 'mus', 'music', () => (est && est.mus && est.mus.dur) || 0);
     render();
+    recuperar();
   }
 })();
 </script>

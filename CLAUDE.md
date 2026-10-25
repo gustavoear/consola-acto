@@ -52,11 +52,16 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 
 ### Estado guardado
 
-En `localStorage['consola-acto:programa']`: nombre, sonido, "al terminar", repetición de música y ajuste (`fit`) de cada archivo (por `nombre|tamaño|fecha`), `config` (tiempos de fondos) y `bg` (orden y qué fondos rotan). Los archivos en sí **no** se guardan: el usuario vuelve a elegir la carpeta en cada sesión.
+**Al volver a abrir la consola está todo como se dejó, sin ningún paso.** Se guarda solo, en cada cambio:
+
+- En `localStorage['consola-acto:programa']`: nombre, sonido, "al terminar", repetición de música y ajuste (`fit`) de cada archivo (por `nombre|tamaño|fecha`), `config` (tiempos de fondos), `bg` (orden y qué fondos rotan), y qué hay cargado: `order` (ids del programa, en orden) y `fondos` (ids de los fondos).
+- En IndexedDB (base `consola-acto`, almacén `archivos`): **una copia de cada archivo**, con su firma `nombre|tamaño|fecha` como clave. Si un archivo está en el programa y en los fondos, se guarda una sola vez. `recordar()` copia lo que se agrega, `olvidar()` borra las copias que ya no usa nadie (al quitar, vaciar o reemplazar con "Elegir carpeta"), y `recuperar()` arma el programa y los fondos al iniciar.
+- Las copias ocupan en disco lo mismo que los archivos y quedan en ese navegador de esa computadora. Si no hay lugar, se avisa y la consola sigue funcionando; lo que no se pudo copiar simplemente no vuelve.
+- Se descartó guardar una configuración en `.json` y volver a elegir la carpeta: eran dos pasos y confundían. El navegador no da rutas de archivos ni puede releerlos solo.
 
 ### Orden del programa
 
-**"Elegir carpeta" reemplaza el programa y lo ordena por nombre de archivo** (`localeCompare` numérico: `01_…`, `02_…`). El orden manual con ↑ ↓ dura solo la sesión. Antes se guardaba el orden en `localStorage` y le ganaba a los nombres: al renombrar archivos el programa quedaba desordenado (pasó en el ensayo). No volver a ese comportamiento. Cada fila muestra el nombre real del archivo (`.fname`) porque la etiqueta oculta el número.
+**"Elegir carpeta" reemplaza el programa y lo ordena por nombre de archivo** (`localeCompare` numérico: `01_…`, `02_…`). El orden manual con ↑ ↓ se recuerda al volver a abrir la consola (con el programa recuperado), pero **"Elegir carpeta" siempre ordena por nombre**. Antes el orden guardado le ganaba a los nombres al elegir la carpeta: al renombrar archivos, el programa quedaba desordenado (pasó en el ensayo). No volver a ese comportamiento. Cada fila muestra el nombre real del archivo (`.fname`) porque la etiqueta oculta el número.
 
 ### Opciones por contenido
 
