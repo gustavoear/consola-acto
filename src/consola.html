@@ -65,8 +65,15 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 .c-col { display: grid; gap: 14px; min-width: 0; }
 .panel { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 12px; padding: 14px; min-width: 0; }
 .panel h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--c-mute); font-weight: 700; }
-.c-now { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.c-now { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) minmax(170px, .55fr); gap: 14px; margin-top: 14px; }
+@media (max-width: 1100px) { .c-now { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 720px) { .c-now { grid-template-columns: minmax(0, 1fr); } }
+/* la franja queda fija al bajar por el programa; solo en pantallas anchas y altas, donde no tapa la lista */
+@media (min-width: 1101px) and (min-height: 600px) {
+  .c-now { position: sticky; top: 0; z-index: 3; background: var(--c-bg); margin-top: 2px; padding-block: 12px;
+    box-shadow: 0 10px 14px -12px rgba(0,0,0,.8); }
+  .c-grid { margin-top: 2px; }
+}
 .onair { border-color: rgba(239,77,86,.55); }
 .onair h2 { color: var(--c-air); }
 .big-name { font-size: 20px; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
@@ -190,22 +197,34 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
   <span class="pill" id="conn">Pantalla del proyector cerrada</span>
   <button class="btn prim" id="abrir" type="button">Abrir pantalla del proyector</button>
 </header>
+<!-- arriba, lo que se mira y se toca en vivo; abajo, lo que se prepara -->
+<div class="c-now">
+  <section class="panel onair" aria-live="polite">
+    <h2>Al aire</h2>
+    <p class="big-name" id="airName">Fondos</p>
+    <p class="sub" id="airSub">Sin fondos cargados</p>
+    <div class="seek" id="airSeek" role="slider" aria-label="Posición del video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="airBar"></i></div><span class="tip"></span></div>
+    <div class="times"><span id="airT">—</span><b id="airLeft">—</b></div>
+  </section>
+  <section class="panel nextp">
+    <h2>Siguiente · <span class="kbd">Espacio</span></h2>
+    <p class="big-name" id="nextName">Sin contenidos cargados</p>
+    <p class="sub" id="nextSub">Cargá una carpeta con videos, imágenes o música.</p>
+  </section>
+  <section class="panel">
+    <h2>Música</h2>
+    <p class="big-name" id="musName" style="font-size:16px">Sin música</p>
+    <div class="seek" id="musSeek" role="slider" aria-label="Posición de la música" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="musBar" style="background:var(--c-gold)"></i></div><span class="tip"></span></div>
+    <div class="times"><span id="musT">—</span><b id="musLeft" style="font-size:16px">—</b></div>
+    <div class="load" style="margin-top:10px"><button class="btn" id="musLoop" type="button" aria-pressed="false">Repetir · R</button><button class="btn" id="musStop" type="button">Cortar música · S</button></div>
+  </section>
+  <section class="panel">
+    <h2>Volumen</h2>
+    <div class="vol"><input type="range" id="vol" min="0" max="100" value="100" aria-label="Volumen general"><b id="volV">100%</b></div>
+  </section>
+</div>
 <div class="c-grid">
   <main class="c-col">
-    <div class="c-now">
-      <section class="panel onair" aria-live="polite">
-        <h2>Al aire</h2>
-        <p class="big-name" id="airName">Fondos</p>
-        <p class="sub" id="airSub">Sin fondos cargados</p>
-        <div class="seek" id="airSeek" role="slider" aria-label="Posición del video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="airBar"></i></div><span class="tip"></span></div>
-        <div class="times"><span id="airT">—</span><b id="airLeft">—</b></div>
-      </section>
-      <section class="panel nextp">
-        <h2>Siguiente · <span class="kbd">Espacio</span></h2>
-        <p class="big-name" id="nextName">Sin contenidos cargados</p>
-        <p class="sub" id="nextSub">Cargá una carpeta con videos, imágenes o música.</p>
-      </section>
-    </div>
     <section class="panel">
       <h2>Programa</h2>
       <div class="load">
@@ -239,17 +258,6 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
         <div class="step"><button class="btn" type="button" data-step="fade" data-d="-0.5" aria-label="Fundido más corto">−</button><input type="number" id="inFade" min="0.2" max="8" step="0.1" inputmode="decimal"><span>s</span><button class="btn" type="button" data-step="fade" data-d="0.5" aria-label="Fundido más largo">+</button></div>
         <p class="nextchg" id="nextChg">—</p>
       </div>
-    </section>
-    <section class="panel">
-      <h2>Música</h2>
-      <p class="big-name" id="musName" style="font-size:16px">Sin música</p>
-      <div class="seek" id="musSeek" role="slider" aria-label="Posición de la música" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="musBar" style="background:var(--c-gold)"></i></div><span class="tip"></span></div>
-      <div class="times"><span id="musT">—</span><b id="musLeft" style="font-size:16px">—</b></div>
-      <div class="load" style="margin-top:10px"><button class="btn" id="musLoop" type="button" aria-pressed="false">Repetir · R</button><button class="btn" id="musStop" type="button">Cortar música · S</button></div>
-    </section>
-    <section class="panel">
-      <h2>Volumen</h2>
-      <div class="vol"><input type="range" id="vol" min="0" max="100" value="100" aria-label="Volumen general"><b id="volV">100%</b></div>
     </section>
     <section class="panel">
       <h2>Teclas</h2>

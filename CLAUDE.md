@@ -74,6 +74,7 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 - Interfaz en **español rioplatense con voseo** ("Elegí", "Tocá"). Textos claros, sin tecnicismos: lo opera un docente durante un acto en vivo.
 - Todo tiene que funcionar **sin conexión**. El HTML de `dist/` no puede depender de archivos externos, salvo Google Fonts, que tiene respaldo.
 - La consola se usa con la sala a oscuras: tema oscuro, el rojo indica "al aire" y el dorado indica "siguiente".
+- Distribución de la consola: **arriba, en una franja (`.c-now`), lo que se mira y se toca en vivo**: Al aire, Siguiente, Música y Volumen. Abajo, lo que se prepara: Programa a la izquierda; Fondos, Teclas y Acerca de a la derecha. En una notebook de 1366×768 todo lo de la franja tiene que verse sin hacer scroll, y **la franja queda fija (`position: sticky`) al bajar por un programa largo**, para no perder de vista lo que está al aire. Por debajo de 1100 px de ancho (o 600 px de alto) deja de estar fija, porque taparía la lista; ahí pasa a 2×2, y por debajo de 720 px a una columna.
 - **Espacio** tiene que lanzar siempre el siguiente. Después de un clic con el mouse se le quita el foco a los botones, y los atajos se ignoran mientras se escribe en un campo.
 - Nada se borra sin confirmar: un segundo clic, nunca `confirm()`.
 
