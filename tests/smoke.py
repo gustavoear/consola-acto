@@ -91,6 +91,7 @@ def main() -> int:
         check('miniatura siguiente (música)', c.inner_text('#nextThumb'), '♪')
         c.keyboard.press('Space'); p.wait_for_timeout(1200)
         check('lanzar música', c.inner_text('#musName'), 'Musica')
+        check('barras de sonido', str(c.evaluate("[...document.querySelectorAll('#vu i')].some(e => parseInt(e.style.height) > 6)")), 'True')
         c.keyboard.press('n'); p.wait_for_timeout(1200)
         check('negro', c.inner_text('#airName'), 'Negro')
         # "Cortar música" tiene que andar aunque la ventana del proyector no se vea: ahí el navegador

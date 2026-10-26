@@ -167,6 +167,11 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 .vol { display: flex; align-items: center; gap: 10px; }
 .vol input { flex: 1; min-width: 0; accent-color: var(--c-gold); }
 .vol b { font-variant-numeric: tabular-nums; width: 44px; text-align: right; }
+/* barras de sonido: lo que está saliendo por el proyector (música y videos), de graves a agudos */
+.vu { display: flex; align-items: flex-end; gap: 3px; height: 46px; margin-top: 12px; }
+.vu i { flex: 1; height: 2px; border-radius: 2px 2px 0 0; transition: height .09s linear;
+  background: linear-gradient(to top, var(--c-ok), var(--c-gold) 70%, var(--c-air)) bottom / 100% 46px no-repeat; }
+.vu.off i { background: var(--c-line); }
 .keys { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; align-items: center; font-size: 13px; margin: 0; }
 .keys dd { margin: 0; color: var(--c-mute); }
 .c-toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 10px); background: var(--c-gold); color: #1a1406;
@@ -236,6 +241,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
   <section class="panel">
     <h2>Volumen</h2>
     <div class="vol"><input type="range" id="vol" min="0" max="100" value="100" aria-label="Volumen general"><b id="volV">100%</b></div>
+    <div class="vu off" id="vu" aria-hidden="true" title="Sonido que sale por el proyector"></div>
   </section>
 </div>
 <div class="c-grid">
@@ -519,8 +525,39 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     });
     const arr = $('arranque');
     if (!consola) $('arrTxt').textContent = 'Esta ventana se abre desde la consola: abrí el archivo y usá el botón "Abrir pantalla del proyector".';
+    // barras de sonido para la consola: el sonido de la música y de los videos pasa por un analizador.
+    // Se arma recién con el clic de arranque, porque antes el navegador no deja sonar el audio; si el
+    // analizador no arranca, no se conecta nada y el sonido sale igual que siempre.
+    let medidor = null;
+    function medir() {
+      if (medidor) return;
+      try {
+        const ctx = new AudioContext();
+        ctx.resume().then(() => {
+          if (ctx.state !== 'running' || medidor) return;
+          const an = ctx.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = .6;
+          an.connect(ctx.destination);
+          for (const el of [mus, M.m1.v, M.m2.v]) ctx.createMediaElementSource(el).connect(an);
+          // 16 bandas repartidas de 60 Hz a 12 kHz, como en un ecualizador
+          const bins = new Uint8Array(an.frequencyBinCount), hz = ctx.sampleRate / an.fftSize;
+          const bordes = Array.from({ length: 17 }, (_, i) => Math.max(1, Math.round(60 * Math.pow(200, i / 16) / hz)));
+          medidor = setInterval(() => {
+            if (ctx.state !== 'running') ctx.resume().catch(() => {});
+            an.getByteFrequencyData(bins);
+            const b = [];
+            for (let i = 0; i < 16; i++) {
+              let m = 0;
+              for (let j = bordes[i]; j < Math.max(bordes[i + 1], bordes[i] + 1); j++) m = Math.max(m, bins[j]);
+              b.push(m);
+            }
+            send({ type: 'nivel', b });
+          }, 66);
+        }).catch(() => {});
+      } catch (e) {}
+    }
     arr.addEventListener('click', () => {
       document.body.classList.add('listo');
+      medir();
       try { document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
     });
     addEventListener('dblclick', () => {
@@ -906,6 +943,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       if (d.type === 'hola') { win = e.source; sendFiles(items); send({ type: 'cmd', cmd: 'vol', v: vol }); sendConfig(); sendBg(); toast('Pantalla del proyector conectada'); }
       else if (d.type === 'estado') { if (!win) win = e.source; if (e.source === win) { const first = !lastEst || performance.now() - lastEst > 2000; est = d; lastEst = performance.now(); if (first) { sendFiles(items); sendConfig(); sendBg(); } updateAir(); } }
       else if (d.type === 'tecla' && e.source === win) handleKey(d.key);
+      else if (d.type === 'nivel' && e.source === win) barras(d.b);
       else if (d.type === 'terminado' && e.source === win) {
         const it = items.find(i => i.id === d.id);
         if (!it || it.end !== 'siguiente') return;
@@ -986,6 +1024,15 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       }
     }
     $('musLoop').addEventListener('click', toggleLoop);
+    // barras de sonido: llegan de la pantalla unas 15 veces por segundo; si dejan de llegar, bajan a cero
+    const vu = $('vu'), vuBars = Array.from({ length: 16 }, () => vu.appendChild(document.createElement('i')));
+    let vuQuieto;
+    function barras(b) {
+      vu.classList.remove('off');
+      vuBars.forEach((el, i) => { el.style.height = Math.max(2, Math.round((b[i] || 0) / 255 * 46)) + 'px'; });
+      clearTimeout(vuQuieto);
+      vuQuieto = setTimeout(() => { vuBars.forEach(el => { el.style.height = '2px'; }); vu.classList.add('off'); }, 600);
+    }
     const volIn = $('vol');
     function setVol(v) {
       vol = Math.max(0, Math.min(1, Math.round(v * 100) / 100));

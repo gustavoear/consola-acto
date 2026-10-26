@@ -39,6 +39,7 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 | consola → pantalla | `cmd: negro / pausa / stopMusic / loopMusic / vol / seek / nudge` | Controles en vivo |
 | pantalla → consola | `hola` | La pantalla está lista |
 | pantalla → consola | `estado` | Se envía cada 250 ms: modo, escena, tiempos de video y música, `nextIn`, etc. |
+| pantalla → consola | `nivel` | Barras de sonido de la tarjeta Volumen: 16 bandas `b` (0–255), unas 15 veces por segundo |
 | pantalla → consola | `tecla` | Teclas apretadas en la ventana del proyector, que se reenvían a la consola |
 | pantalla → consola | `terminado` | Terminó un video con "Al terminar: pasar al siguiente" |
 
@@ -48,6 +49,7 @@ Las dos ventanas se comunican con `postMessage`. La consola tiene la referencia 
 - `u1` / `u2`: dos ranuras que se alternan para los fondos (imágenes o videos que agrega el usuario).
 - `negro`. **Sin fondos cargados, el modo fondos muestra negro** (`curKey = null`). Cuando llega el primer fondo, `setBgList` lo muestra enseguida.
 - Música: un `<audio>` independiente de la imagen.
+- Barras de sonido: con el clic de arranque, la música y los videos del programa pasan por un `AnalyserNode` (Web Audio). Si el `AudioContext` no arranca, no se conecta nada y el sonido sale igual. Se muestrea con `setInterval`, no con `requestAnimationFrame` (que no corre con la ventana oculta).
 - Claves de rotación: `u:<id>` de cada fondo agregado.
 
 ### Estado guardado
