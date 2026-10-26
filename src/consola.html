@@ -78,6 +78,11 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 .onair h2 { color: var(--c-air); }
 .big-name { font-size: 20px; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
 .sub { color: var(--c-mute); font-size: 13px; margin: 2px 0 0; }
+/* miniatura y nombre de lo que está al aire y de lo que sigue */
+.now-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.now-row .thumb { flex: none; }
+.now-row .thumb.grande { width: 120px; font-size: 26px; }
+.now-txt { min-width: 0; flex: 1; }
 .bar { height: 8px; background: var(--c-raise); border-radius: 99px; overflow: hidden; margin-top: 12px; }
 .bar i { display: block; height: 100%; width: 0; background: var(--c-air); border-radius: 99px; transition: width .25s linear; }
 /* barra para desplazarse: zona de clic alta, barra fina que crece al pasar el mouse */
@@ -201,15 +206,25 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
 <div class="c-now">
   <section class="panel onair" aria-live="polite">
     <h2>Al aire</h2>
-    <p class="big-name" id="airName">Fondos</p>
-    <p class="sub" id="airSub">Sin fondos cargados</p>
+    <div class="now-row">
+      <span class="thumb grande" id="airThumb" hidden></span>
+      <div class="now-txt">
+        <p class="big-name" id="airName">Fondos</p>
+        <p class="sub" id="airSub">Sin fondos cargados</p>
+      </div>
+    </div>
     <div class="seek" id="airSeek" role="slider" aria-label="Posición del video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar"><i id="airBar"></i></div><span class="tip"></span></div>
     <div class="times"><span id="airT">—</span><b id="airLeft">—</b></div>
   </section>
   <section class="panel nextp">
     <h2>Siguiente · <span class="kbd">Espacio</span></h2>
-    <p class="big-name" id="nextName">Sin contenidos cargados</p>
-    <p class="sub" id="nextSub">Cargá una carpeta con videos, imágenes o música.</p>
+    <div class="now-row">
+      <span class="thumb" id="nextThumb" hidden></span>
+      <div class="now-txt">
+        <p class="big-name" id="nextName">Sin contenidos cargados</p>
+        <p class="sub" id="nextSub">Cargá una carpeta con videos, imágenes o música.</p>
+      </div>
+    </div>
   </section>
   <section class="panel">
     <h2>Música</h2>
@@ -826,8 +841,17 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       if (e.target.dataset.act === 'label') { it.label = e.target.value.trim() || cleanName(it.name); persist(); updateNext(); }
     });
     listEl.addEventListener('keydown', e => { if (e.target.dataset.act === 'label' && e.key === 'Enter') e.target.blur(); });
+    // miniatura de un contenido o fondo (x); sin x, un recuadro negro (negro o sin fondos).
+    // Solo toca el estilo si cambió, porque "al aire" se actualiza cada 250 ms.
+    function miniatura(el, x) {
+      const img = x && x.thumb ? x.thumb : '', txt = img ? '' : x && x.kind === 'audio' ? '♪' : x && x.kind === 'video' ? '▶' : '';
+      el.hidden = false;
+      if (el.dataset.img === img && el.textContent === txt) return;
+      el.dataset.img = img; el.style.backgroundImage = img ? `url('${img}')` : ''; el.textContent = txt;
+    }
     function updateNext() {
       const it = items[sel];
+      if (it) miniatura($('nextThumb'), it); else $('nextThumb').hidden = true;
       $('nextName').textContent = it ? `${sel + 1}. ${it.label}` : items.length ? 'Fin del programa' : 'Sin contenidos cargados';
       $('nextSub').textContent = it ? `${KIND_TXT[it.kind]}${it.dur ? ' · ' + fmt(it.dur) : ''}${it.kind === 'video' ? (it.sound ? ' · con sonido' : ' · sin sonido') : ''}`
         : items.length ? 'Usá ↑ para volver a elegir uno.' : 'Cargá una carpeta con videos, imágenes o música.';
@@ -907,6 +931,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
         }
       }
       updateNextChg();
+      miniatura($('airThumb'), est.mode === 'fondos' ? bgEntries().find(e => e.key === est.current) : est.mode === 'media' ? it : null);
       $('airName').textContent = name; $('airSub').textContent = sub; if (!seekDrag.air) $('airBar').style.width = pct + '%';
       $('airSeek').classList.toggle('can', est.mode === 'media' && est.kind === 'video' && est.dur > 0); $('airSeek').setAttribute('aria-valuenow', Math.round(pct));
       $('airT').textContent = t; $('airLeft').textContent = left;

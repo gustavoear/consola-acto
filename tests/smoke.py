@@ -87,6 +87,8 @@ def main() -> int:
         check('lanzar video', c.inner_text('#airName'), 'Danza')
         c.keyboard.press('Space'); p.wait_for_timeout(1500)
         check('lanzar imagen', c.inner_text('#airName'), 'Foto')
+        check('miniatura al aire', c.eval_on_selector('#airThumb', 'e => e.style.backgroundImage'), 'blob:')
+        check('miniatura siguiente (música)', c.inner_text('#nextThumb'), '♪')
         c.keyboard.press('Space'); p.wait_for_timeout(1200)
         check('lanzar música', c.inner_text('#musName'), 'Musica')
         c.keyboard.press('n'); p.wait_for_timeout(1200)
