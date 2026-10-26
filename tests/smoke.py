@@ -93,8 +93,12 @@ def main() -> int:
         check('lanzar música', c.inner_text('#musName'), 'Musica')
         c.keyboard.press('n'); p.wait_for_timeout(1200)
         check('negro', c.inner_text('#airName'), 'Negro')
+        # "Cortar música" tiene que andar aunque la ventana del proyector no se vea: ahí el navegador
+        # no ejecuta requestAnimationFrame (se simula anulándolo)
+        p.evaluate('window.requestAnimationFrame = () => 0')
         c.keyboard.press('s'); p.wait_for_timeout(2000)
         check('cortar música', c.inner_text('#musName'), 'Sin música')
+        check('cortar música (se detiene)', str(p.evaluate("document.getElementById('mus').paused")), 'True')
         c.keyboard.press('f'); p.wait_for_timeout(1500)
         check('fondos', c.inner_text('#airName'), 'Fondos')
 

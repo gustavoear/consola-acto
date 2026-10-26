@@ -334,15 +334,16 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
     const FADE_MS = 1800;
 
     const urlFor = id => { const f = files.get(id); if (!f) return null; if (!f.url) f.url = URL.createObjectURL(f.file); return f.url; };
+    // fundido de volumen. Va con un temporizador y no con requestAnimationFrame: el navegador no ejecuta
+    // requestAnimationFrame si la ventana del proyector no se ve (minimizada o tapada), y la música no se cortaba.
     function ramp(el, to, ms, done) {
       const from = el.volume, t0 = performance.now();
-      cancelAnimationFrame(el._ramp);
-      const step = now => {
-        const k = Math.min(1, (now - t0) / ms);
+      clearInterval(el._ramp);
+      el._ramp = setInterval(() => {
+        const k = Math.min(1, (performance.now() - t0) / ms);
         el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-        if (k < 1) el._ramp = requestAnimationFrame(step); else if (done) done();
-      };
-      el._ramp = requestAnimationFrame(step);
+        if (k >= 1) { clearInterval(el._ramp); if (done) done(); }
+      }, 30);
     }
     function show(name, fade) {
       document.documentElement.style.setProperty('--fade', (fade || CONFIG.fadeSeg) + 's');
@@ -419,7 +420,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
       if (!url) return;
       if (c.kind === 'audio') return playMusic(c.id, c.label, !!c.loop);
       const name = activeSlot === 'm1' ? 'm2' : 'm1', s = M[name];
-      s.v.onended = null; cancelAnimationFrame(s.v._ramp);
+      s.v.onended = null; clearInterval(s.v._ramp);
       if (c.kind === 'image') {
         s.v.pause(); s.v.removeAttribute('src'); s.v.load(); s.v.hidden = true;
         s.img.hidden = false; s.blur.hidden = false; s.img.src = url; s.blur.src = url;
@@ -483,7 +484,7 @@ body.consola *, body.consola *::before, body.consola *::after { box-sizing: bord
           if (d.fit) { cue.fit = d.fit; M[cue.slot].el.classList.toggle('cover', d.fit === 'llenar'); }
           if (typeof d.sound === 'boolean' && cue.kind === 'video') {
             cue.sound = d.sound; const v = M[cue.slot].v;
-            cancelAnimationFrame(v._ramp); v.muted = !d.sound; v.volume = d.sound ? vol : 0;
+            clearInterval(v._ramp); v.muted = !d.sound; v.volume = d.sound ? vol : 0;
             if (d.sound && !mus.paused) stopMusic();
           }
         }
